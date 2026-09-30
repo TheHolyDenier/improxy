@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { RowStatus, ScryfallPrinting } from '@/domain/card'
-import { cardLanguageCodes } from '@/i18n'
+import { cardLanguageOptions } from '@/i18n'
 import BaseSelect from './ui/BaseSelect.vue'
 
 const props = defineProps<{
@@ -22,12 +22,6 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const selectedPrinting = computed(() =>
   props.printings.find((printing) => printing.id === props.selectedPrintingId),
-)
-const languageOptions = computed(() =>
-  cardLanguageCodes.map((value) => ({
-    value,
-    label: value.toUpperCase(),
-  })),
 )
 const printingGroups = computed(() => {
   const groups = new Map<
@@ -131,7 +125,7 @@ function selectPrinting(editionKey: string) {
           <BaseSelect
             :model-value="language"
             :label="t('language.card')"
-            :options="languageOptions"
+            :options="cardLanguageOptions"
             @update:model-value="emit('update:language', $event)"
           />
         </div>
@@ -207,11 +201,11 @@ function selectPrinting(editionKey: string) {
   to {
     background-position: -200% 0;
   }
+}
 
-  @media (max-width: 520px) {
-    .result-card__controls {
-      grid-template-columns: 1fr;
-    }
+@media (max-width: 520px) {
+  .result-card__controls {
+    grid-template-columns: 1fr;
   }
 }
 

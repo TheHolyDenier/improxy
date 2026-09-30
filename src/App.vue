@@ -16,6 +16,7 @@ import { useProxyWorkspace } from './composables/useProxyWorkspace'
 const {
   rawList,
   parseErrors,
+  isLoading,
   globalLanguage,
   inkSaving,
   rows,
@@ -31,6 +32,7 @@ const {
   setGlobalLanguage,
   setRowLanguage,
   setInkSaving,
+  duplicateRow,
   print,
 } = useProxyWorkspace()
 
@@ -43,8 +45,9 @@ async function addQuickCard() {
     return
   }
 
-  await addCardFromSyntax(value)
-  quickAddValue.value = ''
+  if (await addCardFromSyntax(value)) {
+    quickAddValue.value = ''
+  }
 }
 </script>
 
@@ -65,6 +68,7 @@ async function addQuickCard() {
     <CardListInput
       v-model="rawList"
       :error-messages="parseErrors"
+      :loading="isLoading"
       @import="importList"
     />
 
@@ -85,10 +89,15 @@ async function addQuickCard() {
             v-model="quickAddValue"
             :label="t('import.quickAddLabel')"
             :placeholder="t('import.quickAddPlaceholder')"
+            :disabled="isLoading"
             @keyup.enter="addQuickCard"
           />
-          <BaseButton variant="secondary" @click="addQuickCard">
-            {{ t('import.quickAdd') }}
+          <BaseButton
+            variant="secondary"
+            :disabled="isLoading"
+            @click="addQuickCard"
+          >
+            {{ isLoading ? t('import.loading') : t('import.quickAdd') }}
           </BaseButton>
         </div>
         <div v-if="!visibleRows.length" class="app__empty-state">
@@ -101,6 +110,7 @@ async function addQuickCard() {
               :language="row.languageOverride || globalLanguage"
               @update="updateRow(row.id, $event)"
               @remove="removeRow(row.id)"
+              @duplicate="duplicateRow(row.id)"
               @language="setRowLanguage(row.id, $event)"
             />
           </div>
@@ -110,6 +120,7 @@ async function addQuickCard() {
         :total-copies="totalCopies"
         :unresolved-count="unresolvedCount"
         :ready="readyToPrint"
+        :loading="isLoading"
         @print="print"
       />
     </section>

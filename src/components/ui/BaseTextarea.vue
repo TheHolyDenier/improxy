@@ -4,23 +4,19 @@ defineProps<{
   label: string
   placeholder?: string
   invalid?: boolean
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
-function handleInput(event: { target: unknown }) {
-  if (
-    typeof event.target !== 'object' ||
-    event.target === null ||
-    !('value' in event.target) ||
-    typeof event.target.value !== 'string'
-  ) {
+function handleInput(event: globalThis.Event) {
+  if (!(event.currentTarget instanceof globalThis.HTMLTextAreaElement)) {
     return
   }
 
-  emit('update:modelValue', event.target.value)
+  emit('update:modelValue', event.currentTarget.value)
 }
 </script>
 
@@ -31,6 +27,7 @@ function handleInput(event: { target: unknown }) {
     :value="modelValue"
     :aria-label="label"
     :placeholder="placeholder"
+    :disabled="disabled"
     @input="handleInput"
   />
 </template>

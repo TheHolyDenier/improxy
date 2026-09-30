@@ -9,6 +9,7 @@ import BaseTextarea from './ui/BaseTextarea.vue'
 const props = defineProps<{
   modelValue: string
   errorMessages: string[]
+  loading?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -47,7 +48,7 @@ onBeforeUnmount(dismissErrors)
 </script>
 
 <template>
-  <BaseCard class="import-card">
+  <BaseCard class="import-card" :aria-busy="props.loading">
     <div class="import-card__heading">
       <div>
         <p class="import-card__eyebrow">{{ t('import.kicker') }}</p>
@@ -65,10 +66,13 @@ onBeforeUnmount(dismissErrors)
       :label="t('import.label')"
       :placeholder="t('import.placeholder')"
       :invalid="errorMessages.length > 0"
+      :disabled="props.loading"
       @update:model-value="emit('update:modelValue', $event)"
     />
     <div class="import-card__actions">
-      <BaseButton @click="emit('import')">{{ t('import.convert') }}</BaseButton>
+      <BaseButton :disabled="props.loading" @click="emit('import')">
+        {{ props.loading ? t('import.loading') : t('import.convert') }}
+      </BaseButton>
     </div>
   </BaseCard>
   <Teleport to="body">

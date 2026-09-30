@@ -8,6 +8,7 @@ defineProps<{
   totalCopies: number
   unresolvedCount: number
   ready: boolean
+  loading?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -30,9 +31,16 @@ const { t } = useI18n()
           })
         }}
       </p>
+      <p v-if="unresolvedCount" class="readiness-card__warning">
+        {{
+          t('readiness.unresolved', {
+            count: unresolvedCount,
+          })
+        }}
+      </p>
     </div>
-    <BaseButton :disabled="!ready" @click="emit('print')">
-      {{ t('readiness.print') }}
+    <BaseButton :disabled="!ready || loading" @click="emit('print')">
+      {{ loading ? t('readiness.loading') : t('readiness.print') }}
     </BaseButton>
   </BaseCard>
 </template>

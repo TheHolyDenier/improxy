@@ -3,6 +3,10 @@ import { createI18n } from 'vue-i18n'
 export const defaultCardLanguage = 'es'
 
 export const cardLanguageCodes = ['en', 'es', 'ja', 'de', 'fr'] as const
+export const cardLanguageOptions = cardLanguageCodes.map((value) => ({
+  value,
+  label: value.toUpperCase(),
+}))
 
 export const i18n = createI18n({
   legacy: false,
@@ -35,6 +39,7 @@ export const i18n = createI18n({
         label: 'Lista de cartas',
         convert: 'Añadir cartas',
         quickAdd: 'Añadir carta',
+        loading: 'Cargando…',
         quickAddLabel: 'Añadir carta por nombre o sintaxis',
         quickAddPlaceholder: 'Lightning Bolt e:INR cn:13',
       },
@@ -72,6 +77,7 @@ export const i18n = createI18n({
         decreaseQuantity: 'Reducir cantidad',
         increaseQuantity: 'Aumentar cantidad',
         remove: 'Eliminar carta',
+        duplicate: 'Duplicar carta',
       },
       result: {
         selectedEdition: 'EDICIÓN SELECCIONADA',
@@ -91,6 +97,9 @@ export const i18n = createI18n({
         complete:
           'Revisa la edición y el idioma de cada carta. Después, imprime al 100 %.',
         print: 'Imprimir proxies',
+        loading: 'Preparando…',
+        unresolved:
+          '{count} carta pendiente de resolver | {count} cartas pendientes de resolver',
       },
       preview: {
         title: 'Tu hora del Juan Palomo',
@@ -114,6 +123,7 @@ export const i18n = createI18n({
           'No se pudo preparar una imagen para ahorrar tinta.',
         parseLine: 'Carta {line}: {message}',
         close: 'Cerrar aviso',
+        quickAddSingle: 'El añadido rápido solo admite una carta por vez.',
       },
     },
   },

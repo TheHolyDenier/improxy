@@ -9,6 +9,7 @@ import CardResultCard from './CardResultCard.vue'
 const emit = defineEmits<{
   update: [patch: Partial<CardRowState>]
   remove: []
+  duplicate: []
   language: [value: string]
 }>()
 
@@ -65,6 +66,14 @@ const props = defineProps<{
       </div>
       <div class="row-editor__meta">
         <div class="row-editor__actions">
+          <BaseButton
+            type="button"
+            variant="secondary"
+            :aria-label="t('row.duplicate')"
+            @click.stop="emit('duplicate')"
+          >
+            <Plus :size="17" aria-hidden="true" />
+          </BaseButton>
           <BaseButton
             type="button"
             variant="danger"

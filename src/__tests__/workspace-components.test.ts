@@ -55,6 +55,16 @@ describe('workspace components', () => {
     expect(wrapper.emitted('import')).toHaveLength(1)
   })
 
+  it('disables list input controls while loading', () => {
+    const wrapper = mount(CardListInput, {
+      props: { modelValue: '', errorMessages: [], loading: true },
+    })
+
+    expect(wrapper.find('textarea').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('button').attributes('disabled')).toBeDefined()
+    expect(wrapper.text()).toContain('Cargando…')
+  })
+
   it('shows import errors as a floating notification and dismisses them', async () => {
     vi.useFakeTimers()
     const wrapper = mount(CardListInput, {
@@ -96,7 +106,7 @@ describe('workspace components', () => {
     wrapper.unmount()
   })
 
-  it('renders a read-only row and emits removal', async () => {
+  it('renders a read-only row and emits removal and duplication', async () => {
     const wrapper = mount(CardRowEditor, { props: { row } })
 
     expect(wrapper.text()).toContain('Nombre')
@@ -108,6 +118,10 @@ describe('workspace components', () => {
     await wrapper.find('button.button--danger').trigger('click')
 
     expect(wrapper.emitted('remove')).toHaveLength(1)
+
+    await wrapper.find('button[aria-label="Duplicar carta"]').trigger('click')
+
+    expect(wrapper.emitted('duplicate')).toHaveLength(1)
   })
 
   it('displays the resolved Scryfall name instead of the entered name', () => {
@@ -153,10 +167,12 @@ describe('workspace components', () => {
     expect(wrapper.text()).toContain('—')
   })
 
-  it('renders quantity controls without search or duplicate actions', async () => {
+  it('renders quantity controls without a search action', async () => {
     const wrapper = mount(CardRowEditor, { props: { row } })
     expect(wrapper.find('button[aria-label="Buscar"]').exists()).toBe(false)
-    expect(wrapper.find('button[aria-label="Duplicar"]').exists()).toBe(false)
+    expect(wrapper.find('button[aria-label="Duplicar carta"]').exists()).toBe(
+      true,
+    )
 
     const increase = wrapper.find('button[aria-label="Aumentar cantidad"]')
     await increase.trigger('click')
@@ -261,6 +277,16 @@ describe('workspace components', () => {
     expect(wrapper.text()).toContain('1 proxy listo')
     await wrapper.find('button').trigger('click')
     expect(wrapper.emitted('print')).toHaveLength(1)
+  })
+
+  it('shows unresolved cards and disables print while loading', () => {
+    const wrapper = mount(ReadinessSummary, {
+      props: { totalCopies: 1, unresolvedCount: 2, ready: true, loading: true },
+    })
+
+    expect(wrapper.text()).toContain('2 cartas pendientes de resolver')
+    expect(wrapper.find('button').attributes('disabled')).toBeDefined()
+    expect(wrapper.text()).toContain('Preparando…')
   })
 
   it('renders nine print slots for one page', () => {

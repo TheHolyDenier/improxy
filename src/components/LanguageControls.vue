@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BaseSelect from './ui/BaseSelect.vue'
-import { cardLanguageCodes } from '@/i18n'
+import { cardLanguageOptions } from '@/i18n'
 
 defineProps<{
   modelValue: string
@@ -14,12 +13,6 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const languageOptions = computed(() =>
-  cardLanguageCodes.map((value) => ({
-    value,
-    label: value.toUpperCase(),
-  })),
-)
 </script>
 
 <template>
@@ -28,7 +21,7 @@ const languageOptions = computed(() =>
       id="global-language"
       :model-value="modelValue"
       :label="t('language.global')"
-      :options="languageOptions"
+      :options="cardLanguageOptions"
       @update:model-value="emit('update:modelValue', $event)"
     />
   </div>

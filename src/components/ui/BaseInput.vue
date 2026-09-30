@@ -4,23 +4,19 @@ defineProps<{
   type?: 'text' | 'number'
   min?: number
   label: string
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
-function handleInput(event: { target: unknown }) {
-  if (
-    typeof event.target !== 'object' ||
-    event.target === null ||
-    !('value' in event.target) ||
-    typeof event.target.value !== 'string'
-  ) {
+function handleInput(event: globalThis.Event) {
+  if (!(event.currentTarget instanceof globalThis.HTMLInputElement)) {
     return
   }
 
-  emit('update:modelValue', event.target.value)
+  emit('update:modelValue', event.currentTarget.value)
 }
 </script>
 
@@ -30,6 +26,7 @@ function handleInput(event: { target: unknown }) {
     :type="type ?? 'text'"
     :value="modelValue"
     :min="min"
+    :disabled="disabled"
     :aria-label="label"
     @input="handleInput"
   />

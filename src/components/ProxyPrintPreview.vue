@@ -84,17 +84,12 @@ watch(
   { immediate: true },
 )
 
-function updateInkSaving(event: { target: unknown }) {
-  if (
-    typeof event.target !== 'object' ||
-    event.target === null ||
-    !('checked' in event.target) ||
-    typeof event.target.checked !== 'boolean'
-  ) {
+function updateInkSaving(event: globalThis.Event) {
+  if (!(event.currentTarget instanceof globalThis.HTMLInputElement)) {
     return
   }
 
-  emit('update:inkSaving', event.target.checked)
+  emit('update:inkSaving', event.currentTarget.checked)
 }
 </script>
 

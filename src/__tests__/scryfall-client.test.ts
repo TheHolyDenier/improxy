@@ -154,6 +154,21 @@ describe('ScryfallClient', () => {
     ).rejects.toThrow('respuesta no válida')
   })
 
+  it('rejects cards missing fields used by the printer', async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ data: [{ id: 'card-1', name: 'Lightning Bolt' }] }),
+          { status: 200 },
+        ),
+      )
+
+    await expect(
+      new ScryfallClient(fetcher).searchPrintings('Lightning Bolt'),
+    ).rejects.toThrow('respuesta no válida')
+  })
+
   it('deduplicates simultaneous requests for the same card and set', async () => {
     let resolveResponse: (response: Response) => void = () => {}
     const response = new Promise<Response>((resolve) => {

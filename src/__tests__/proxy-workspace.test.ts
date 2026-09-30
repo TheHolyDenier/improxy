@@ -55,6 +55,62 @@ describe('useProxyWorkspace', () => {
     expect(workspace.totalCopies.value).toBe(3)
   })
 
+  it('blocks a second import while the first one is loading', async () => {
+    let resolveSearch: ((value: (typeof printing)[]) => void) | undefined
+    const pendingSearch = new Promise<(typeof printing)[]>((resolve) => {
+      resolveSearch = resolve
+    })
+    const client = {
+      searchPrintings: vi.fn().mockReturnValue(pendingSearch),
+    }
+    const workspace = useProxyWorkspace(client)
+
+    workspace.rawList.value = 'Lightning Bolt'
+    const firstImport = workspace.importList()
+    expect(workspace.isLoading.value).toBe(true)
+
+    workspace.rawList.value = 'Counterspell'
+    await workspace.importList()
+
+    expect(client.searchPrintings).toHaveBeenCalledTimes(1)
+    expect(workspace.isLoading.value).toBe(true)
+
+    resolveSearch?.([printing])
+    await firstImport
+
+    expect(workspace.isLoading.value).toBe(false)
+    expect(workspace.rows.value).toHaveLength(1)
+  })
+
+  it('rejects multiline quick-add input without changing the list', async () => {
+    const client = {
+      searchPrintings: vi.fn().mockResolvedValue([printing]),
+    }
+    const workspace = useProxyWorkspace(client)
+
+    const added = await workspace.addCardFromSyntax(
+      'Lightning Bolt\nCounterspell',
+    )
+
+    expect(added).toBe(false)
+    expect(client.searchPrintings).not.toHaveBeenCalled()
+    expect(workspace.rawList.value).toBe('')
+  })
+
+  it('keeps quick-add input data available when resolution fails', async () => {
+    const client = {
+      searchPrintings: vi.fn().mockResolvedValue([]),
+    }
+    const workspace = useProxyWorkspace(client)
+
+    const added = await workspace.addCardFromSyntax('Unknown Card')
+
+    expect(added).toBe(false)
+    expect(workspace.rawList.value).toBe('')
+    expect(workspace.isLoading.value).toBe(false)
+    expect(workspace.unresolvedCount.value).toBe(1)
+  })
+
   it('searches automatically when the collector number changes', async () => {
     const client = {
       searchPrintings: vi.fn().mockResolvedValue([printing]),

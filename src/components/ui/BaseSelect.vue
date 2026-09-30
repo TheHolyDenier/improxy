@@ -9,17 +9,12 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
-function handleChange(event: { target: unknown }) {
-  if (
-    typeof event.target !== 'object' ||
-    event.target === null ||
-    !('value' in event.target) ||
-    typeof event.target.value !== 'string'
-  ) {
+function handleChange(event: globalThis.Event) {
+  if (!(event.currentTarget instanceof globalThis.HTMLSelectElement)) {
     return
   }
 
-  emit('update:modelValue', event.target.value)
+  emit('update:modelValue', event.currentTarget.value)
 }
 </script>
 

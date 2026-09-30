@@ -97,7 +97,11 @@ export class ScryfallClient {
     ]
       .filter(Boolean)
       .join(' ')
-    const nameQuery = name.trim() ? `!"${name.trim()}"` : ''
+    const escapedName = name
+      .trim()
+      .replaceAll('\\', '\\\\')
+      .replaceAll('"', '\\"')
+    const nameQuery = escapedName ? `!"${escapedName}"` : ''
     const query = [nameQuery, selectors].filter(Boolean).join(' ')
     const url = new URL('/cards/search', this.baseUrl)
     url.searchParams.set('q', query)
@@ -164,16 +168,53 @@ export class ScryfallClient {
 
     const data = value.data
     return (
-      Array.isArray(data) &&
-      data.every(
-        (card) =>
-          typeof card === 'object' &&
-          card !== null &&
-          'id' in card &&
-          typeof card.id === 'string' &&
-          'name' in card &&
-          typeof card.name === 'string',
-      )
+      Array.isArray(data) && data.every((card) => this.isScryfallCard(card))
+    )
+  }
+
+  private isScryfallCard(value: unknown): value is ScryfallCard {
+    if (typeof value !== 'object' || value === null) {
+      return false
+    }
+
+    const card = value as Record<string, unknown>
+    const hasValidImageUris =
+      card.image_uris === undefined || this.isImageUris(card.image_uris)
+    const hasValidCardFaces =
+      card.card_faces === undefined ||
+      (Array.isArray(card.card_faces) &&
+        card.card_faces.every((face) => {
+          if (typeof face !== 'object' || face === null) {
+            return false
+          }
+
+          const cardFace = face as Record<string, unknown>
+          return (
+            cardFace.image_uris === undefined ||
+            this.isImageUris(cardFace.image_uris)
+          )
+        }))
+
+    return (
+      typeof card.id === 'string' &&
+      typeof card.name === 'string' &&
+      typeof card.set === 'string' &&
+      typeof card.set_name === 'string' &&
+      typeof card.collector_number === 'string' &&
+      typeof card.lang === 'string' &&
+      hasValidImageUris &&
+      hasValidCardFaces
+    )
+  }
+
+  private isImageUris(value: unknown): value is { normal?: string } {
+    if (typeof value !== 'object' || value === null) {
+      return false
+    }
+
+    const imageUris = value as Record<string, unknown>
+    return (
+      imageUris.normal === undefined || typeof imageUris.normal === 'string'
     )
   }
 

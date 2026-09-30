@@ -95,6 +95,8 @@ export function useProxyWorkspace(
   const rawList = ref('')
   const rows = ref<CardRowState[]>([])
   const parseErrors = ref<string[]>([])
+  const failedEntryCount = ref(0)
+  const isLoading = ref(false)
   const globalLanguage = ref(defaultCardLanguage)
   const inkSaving = ref(false)
   const searchRequests = new Map<string, Promise<void>>()
@@ -128,6 +130,7 @@ export function useProxyWorkspace(
   )
   const unresolvedCount = computed(
     () =>
+      failedEntryCount.value +
       rows.value.filter(
         (row) => !row.selectedPrintingId || row.status === 'error',
       ).length,
@@ -145,17 +148,32 @@ export function useProxyWorkspace(
   )
 
   async function importList() {
-    const result = parser.parse(rawList.value)
-    parseErrors.value = result.errors.map((error) =>
-      i18n.global.t('errors.parseLine', {
-        line: error.line,
-        message: error.message,
-      }),
-    )
-    const resolvedRows = await Promise.all(
-      result.entries.map((entry) => resolveEntry(entry)),
-    )
-    rows.value = resolvedRows.filter((row): row is CardRowState => row !== null)
+    if (isLoading.value) {
+      return
+    }
+
+    isLoading.value = true
+    try {
+      const result = parser.parse(rawList.value)
+      parseErrors.value = result.errors.map((error) =>
+        i18n.global.t('errors.parseLine', {
+          line: error.line,
+          message: error.message,
+        }),
+      )
+      failedEntryCount.value = result.errors.length
+      const resolvedRows = await Promise.all(
+        result.entries.map((entry) => resolveEntry(entry)),
+      )
+      failedEntryCount.value += resolvedRows.filter(
+        (row): row is null => row === null,
+      ).length
+      rows.value = resolvedRows.filter(
+        (row): row is CardRowState => row !== null,
+      )
+    } finally {
+      isLoading.value = false
+    }
   }
 
   async function resolveEntry(entry: {
@@ -310,36 +328,54 @@ export function useProxyWorkspace(
     }
   }
 
-  async function addCardFromSyntax(value: string) {
+  async function addCardFromSyntax(value: string): Promise<boolean> {
+    if (isLoading.value) {
+      return false
+    }
+
+    isLoading.value = true
     const sourceLine = rawList.value.trim()
       ? rawList.value.trim().split(/\r?\n/).length + 1
       : 1
-    const result = parser.parse(value)
-    if (result.errors.length || !result.entries[0]) {
-      parseErrors.value = appendUniqueErrors(parseErrors.value, [
-        ...result.errors.map((error) =>
+    try {
+      const result = parser.parse(value)
+      if (result.errors.length || result.entries.length !== 1) {
+        const messages = result.errors.map((error) =>
           i18n.global.t('errors.parseLine', {
             line: sourceLine,
             message: error.message,
           }),
-        ),
-      ])
-      return
-    }
+        )
+        if (result.entries.length !== 1) {
+          messages.push(i18n.global.t('errors.quickAddSingle'))
+        }
+        parseErrors.value = appendUniqueErrors(parseErrors.value, messages)
+        failedEntryCount.value += 1
+        return false
+      }
 
-    const [entry] = result.entries
-    const row = await resolveEntry({
-      ...entry,
-      sourceLine,
-    })
-    if (!row) {
-      return
-    }
+      const entry = result.entries[0]
+      if (!entry) {
+        failedEntryCount.value += 1
+        return false
+      }
+      const row = await resolveEntry({
+        ...entry,
+        sourceLine,
+      })
+      if (!row) {
+        failedEntryCount.value += 1
+        return false
+      }
 
-    rawList.value = rawList.value.trim()
-      ? `${rawList.value.trim()}\n${value}`
-      : value
-    rows.value.push(row)
+      rawList.value = rawList.value.trim()
+        ? `${rawList.value.trim()}\n${value}`
+        : value
+      rows.value.push(row)
+      return true
+    } finally {
+      isLoading.value = false
+    }
   }
 
   function removeRow(rowId: string) {
@@ -403,6 +439,7 @@ export function useProxyWorkspace(
     unresolvedCount,
     pages,
     readyToPrint,
+    isLoading,
     importList,
     searchRow,
     updateRow,
