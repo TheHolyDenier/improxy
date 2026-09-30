@@ -37,7 +37,7 @@ watch(
     }
 
     visibleErrors.value = [...messages]
-    errorTimer = globalThis.setTimeout(dismissErrors, 5000)
+    errorTimer = globalThis.setTimeout(dismissErrors, 60_000)
   },
   { immediate: true },
 )
@@ -69,6 +69,8 @@ onBeforeUnmount(dismissErrors)
     <div class="import-card__actions">
       <BaseButton @click="emit('import')">{{ t('import.convert') }}</BaseButton>
     </div>
+  </BaseCard>
+  <Teleport to="body">
     <div v-if="visibleErrors.length" class="import-card__toast" role="alert">
       <div class="import-card__errors">
         <span
@@ -88,7 +90,7 @@ onBeforeUnmount(dismissErrors)
         ×
       </BaseButton>
     </div>
-  </BaseCard>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -169,9 +171,9 @@ onBeforeUnmount(dismissErrors)
 
 .import-card__toast {
   position: fixed;
-  z-index: 20;
+  z-index: 1000;
   top: 20px;
-  right: 20px;
+  right: 24px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;

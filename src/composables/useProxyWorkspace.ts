@@ -58,6 +58,20 @@ export function useProxyWorkspace(
   const searchTimers = new Map<string, ReturnType<typeof setTimeout>>()
   const searchVersions = new Map<string, number>()
 
+  function rejectRow(row: CardRowState, message: string) {
+    row.status = 'error'
+    row.errorMessage = message
+    row.printings = []
+    row.selectedPrintingId = ''
+    parseErrors.value = appendUniqueErrors(parseErrors.value, [
+      i18n.global.t('errors.parseLine', {
+        line: row.sourceLine,
+        message,
+      }),
+    ])
+    rows.value = rows.value.filter((candidate) => candidate !== row)
+  }
+
   const totalCopies = computed(() =>
     rows.value.reduce(
       (total, row) =>
@@ -106,8 +120,7 @@ export function useProxyWorkspace(
     language = row.languageOverride || globalLanguage.value,
   ) {
     if (!row.name.trim() && !(row.setCode && row.collectorNumber)) {
-      row.status = 'error'
-      row.errorMessage = i18n.global.t('errors.missingName')
+      rejectRow(row, i18n.global.t('errors.missingName'))
       return
     }
 
@@ -142,28 +155,21 @@ export function useProxyWorkspace(
           row.name = preferred?.name ?? printings[0]?.name ?? ''
         }
         row.selectedPrintingId = preferred?.id ?? ''
-        row.status = printings.length ? 'resolved' : 'error'
-        row.errorMessage = printings.length
-          ? ''
-          : i18n.global.t('errors.notFound')
         if (!printings.length) {
-          parseErrors.value = appendUniqueErrors(parseErrors.value, [
-            i18n.global.t('errors.parseLine', {
-              line: row.sourceLine,
-              message: row.errorMessage,
-            }),
-          ])
-          rows.value = rows.value.filter((candidate) => candidate !== row)
+          rejectRow(row, i18n.global.t('errors.notFound'))
+        } else {
+          row.status = 'resolved'
+          row.errorMessage = ''
         }
       } catch (error: unknown) {
         if (searchVersions.get(row.id) !== version) {
           return
         }
-        row.status = 'error'
-        row.errorMessage =
+        const message =
           error instanceof Error
             ? error.message
             : i18n.global.t('errors.searchFailed')
+        rejectRow(row, message || i18n.global.t('errors.searchFailed'))
       } finally {
         searchRequests.delete(requestKey)
       }
@@ -247,15 +253,6 @@ export function useProxyWorkspace(
     )
     rows.value.push(row)
     await searchRow(row)
-    if (row.errorMessage === i18n.global.t('errors.notFound')) {
-      rows.value = rows.value.filter((candidate) => candidate !== row)
-      parseErrors.value = appendUniqueErrors(parseErrors.value, [
-        i18n.global.t('errors.parseLine', {
-          line: sourceLine,
-          message: row.errorMessage,
-        }),
-      ])
-    }
   }
 
   function removeRow(rowId: string) {

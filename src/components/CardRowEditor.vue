@@ -27,12 +27,7 @@ const { t } = useI18n()
       <div class="row-editor__field">
         <span class="row-editor__label">{{ t('row.name') }}</span>
         <strong class="row-editor__value" :title="row.name">
-          <span
-            v-if="row.status === 'loading'"
-            class="row-editor__name-skeleton"
-            :aria-label="t('row.loading')"
-          />
-          <template v-else>{{ row.name || '—' }}</template>
+          {{ row.name || '—' }}
         </strong>
       </div>
       <div class="row-editor__field">
@@ -129,22 +124,6 @@ const { t } = useI18n()
   color: var(--ink);
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.row-editor__name-skeleton {
-  display: block;
-  width: min(180px, 75%);
-  height: 18px;
-  border-radius: 6px;
-  background: linear-gradient(90deg, #eadcf1 25%, #f7eefa 50%, #eadcf1 75%);
-  background-size: 200% 100%;
-  animation: row-name-shimmer 1.2s ease-in-out infinite;
-}
-
-@keyframes row-name-shimmer {
-  to {
-    background-position: -200% 0;
-  }
 }
 
 .row-editor__field:first-child {

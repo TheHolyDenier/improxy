@@ -97,6 +97,24 @@ describe('useProxyWorkspace', () => {
     expect(workspace.parseErrors.value.join(' ')).toContain('Carta 2')
   })
 
+  it('removes cards when the search fails and reports the failure', async () => {
+    const client = {
+      searchPrintings: vi
+        .fn()
+        .mockRejectedValue(new Error('No se pudo conectar con Scryfall.')),
+    }
+    const workspace = useProxyWorkspace(client)
+
+    workspace.rawList.value = 'Lightning Bolt'
+    await workspace.importList()
+
+    expect(workspace.rows.value).toHaveLength(0)
+    expect(workspace.totalCopies.value).toBe(0)
+    expect(workspace.parseErrors.value.join(' ')).toContain(
+      'No se pudo conectar con Scryfall.',
+    )
+  })
+
   it('resolves a card using only set and collector number', async () => {
     const client = {
       searchPrintings: vi.fn().mockResolvedValue([printing]),

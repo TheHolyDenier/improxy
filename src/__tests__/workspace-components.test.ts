@@ -61,16 +61,18 @@ describe('workspace components', () => {
         modelValue: '',
         errorMessages: ['Carta 1: Falta información.'],
       },
+      attachTo: document.body,
     })
 
-    expect(wrapper.find('[role="alert"]').text()).toContain(
-      'Carta 1: Falta información.',
-    )
+    expect(
+      document.body.querySelector('[role="alert"]')?.textContent,
+    ).toContain('Carta 1: Falta información.')
 
-    vi.advanceTimersByTime(5000)
+    vi.advanceTimersByTime(60_000)
     await wrapper.vm.$nextTick()
 
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(document.body.querySelector('[role="alert"]')).toBeNull()
+    wrapper.unmount()
     vi.useRealTimers()
   })
 
