@@ -103,8 +103,9 @@ export const i18n = createI18n({
       },
       preview: {
         title: 'Tu hora del Juan Palomo',
-        subtitle: 'Puedes revisar la previsualización antes de imprimirla.',
+        subtitle: 'Puedes revisar la previsualización antes de imprimirla',
         size: '63 × 88 MM',
+        page: 'Página {current} de {total}',
         empty: 'Añade al menos una carta para ver la cuadrícula 3x3.',
         inkSaving: 'B/N',
         processing: 'Preparando {count} imagen | Preparando {count} imágenes',
@@ -115,6 +116,8 @@ export const i18n = createI18n({
       },
       navigation: {
         backToTop: 'Subir al inicio',
+        previousSection: 'Sección anterior',
+        nextSection: 'Sección siguiente',
       },
       errors: {
         missingName: 'Escribe un nombre antes de buscar.',

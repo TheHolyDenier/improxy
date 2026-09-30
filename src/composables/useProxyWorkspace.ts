@@ -7,6 +7,10 @@ import { defaultCardLanguage, i18n } from '@/i18n'
 import { ScryfallClient } from '@/services/scryfall-client'
 
 type ScryfallSearchClient = Pick<ScryfallClient, 'searchPrintings'>
+const SEARCH_INTERVAL_MS = 150
+
+const wait = (duration: number) =>
+  new Promise<void>((resolve) => globalThis.setTimeout(resolve, duration))
 
 const findPrintingForLanguage = (
   printings: CardRowState['printings'],
@@ -102,6 +106,23 @@ export function useProxyWorkspace(
   const searchRequests = new Map<string, Promise<void>>()
   const searchTimers = new Map<string, ReturnType<typeof setTimeout>>()
   const searchVersions = new Map<string, number>()
+  let searchQueue = Promise.resolve()
+  let hasQueuedSearch = false
+
+  function enqueueSearch<T>(request: () => Promise<T>) {
+    const queuedSearch = searchQueue.then(async () => {
+      if (hasQueuedSearch) {
+        await wait(SEARCH_INTERVAL_MS)
+      }
+      hasQueuedSearch = true
+      return request()
+    })
+    searchQueue = queuedSearch.then(
+      () => undefined,
+      () => undefined,
+    )
+    return queuedSearch
+  }
 
   function rejectRow(row: CardRowState, message: string) {
     row.status = 'error'
@@ -188,11 +209,13 @@ export function useProxyWorkspace(
       : `e:${entry.setCode.toUpperCase()} cn:${entry.collectorNumber.trim()}`
 
     try {
-      const printings = await client.searchPrintings(
-        entry.name,
-        entry.setCode,
-        globalLanguage.value,
-        entry.collectorNumber,
+      const printings = await enqueueSearch(() =>
+        client.searchPrintings(
+          entry.name,
+          entry.setCode,
+          globalLanguage.value,
+          entry.collectorNumber,
+        ),
       )
       if (!printings.length) {
         parseErrors.value = appendUniqueErrors(parseErrors.value, [
@@ -249,11 +272,13 @@ export function useProxyWorkspace(
     searchVersions.set(row.id, version)
     const request = (async () => {
       try {
-        const printings = await client.searchPrintings(
-          searchName,
-          row.setCode,
-          language,
-          row.collectorNumber,
+        const printings = await enqueueSearch(() =>
+          client.searchPrintings(
+            searchName,
+            row.setCode,
+            language,
+            row.collectorNumber,
+          ),
         )
         if (searchVersions.get(row.id) !== version) {
           return

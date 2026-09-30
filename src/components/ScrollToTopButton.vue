@@ -5,46 +5,82 @@ import { useI18n } from 'vue-i18n'
 const props = withDefaults(
   defineProps<{
     enabled?: boolean
+    sectionIds?: string[]
   }>(),
   {
     enabled: false,
+    sectionIds: () => [
+      'import-section',
+      'workspace-section',
+      'preview-section',
+    ],
   },
 )
 
 const { t } = useI18n()
-const visible = ref(false)
+const currentSection = ref(0)
 
-const updateVisibility = () => {
-  visible.value = props.enabled && globalThis.scrollY > 400
+const sectionElements = () =>
+  props.sectionIds
+    .map((id) => globalThis.document.getElementById(id))
+    .filter((element): element is globalThis.HTMLElement => element !== null)
+
+const updateSection = () => {
+  const elements = sectionElements()
+  const scrollPosition = globalThis.scrollY + 120
+  currentSection.value = elements.reduce(
+    (sectionIndex, element, index) =>
+      scrollPosition >= element.offsetTop ? index : sectionIndex,
+    0,
+  )
 }
 
-const scrollToTop = () => {
-  globalThis.scrollTo({ top: 0, behavior: 'smooth' })
+const scrollToSection = (direction: 'up' | 'down') => {
+  const elements = sectionElements()
+  const targetIndex = currentSection.value + (direction === 'down' ? 1 : -1)
+  const target = elements[targetIndex]
+  if (!target) {
+    return
+  }
+
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 onMounted(() => {
-  updateVisibility()
-  globalThis.addEventListener('scroll', updateVisibility)
+  updateSection()
+  globalThis.addEventListener('scroll', updateSection)
 })
 
-watch(() => props.enabled, updateVisibility)
+watch(() => [props.enabled, props.sectionIds], updateSection, {
+  deep: true,
+})
 
 onUnmounted(() => {
-  globalThis.removeEventListener('scroll', updateVisibility)
+  globalThis.removeEventListener('scroll', updateSection)
 })
 </script>
 
 <template>
   <div class="scroll-top-slot">
     <button
-      v-if="visible"
+      v-if="props.enabled && currentSection > 0"
       class="scroll-top-button"
       type="button"
-      :aria-label="t('navigation.backToTop')"
-      :title="t('navigation.backToTop')"
-      @click="scrollToTop"
+      :aria-label="t('navigation.previousSection')"
+      :title="t('navigation.previousSection')"
+      @click="scrollToSection('up')"
     >
       ↑
+    </button>
+    <button
+      v-if="props.enabled && currentSection < props.sectionIds.length - 1"
+      class="scroll-top-button"
+      type="button"
+      :aria-label="t('navigation.nextSection')"
+      :title="t('navigation.nextSection')"
+      @click="scrollToSection('down')"
+    >
+      ↓
     </button>
   </div>
 </template>
@@ -55,6 +91,8 @@ onUnmounted(() => {
   right: 24px;
   bottom: 24px;
   z-index: 20;
+  display: grid;
+  gap: 8px;
 }
 
 .scroll-top-button {

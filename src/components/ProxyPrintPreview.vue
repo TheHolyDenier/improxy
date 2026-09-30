@@ -139,6 +139,11 @@ function updateInkSaving(event: globalThis.Event) {
         :key="pageIndex"
         class="print-preview__page"
       >
+        <span class="print-preview__page-label">
+          {{
+            t('preview.page', { current: pageIndex + 1, total: pages.length })
+          }}
+        </span>
         <div
           v-for="slot in 9"
           :key="slot"
@@ -270,6 +275,7 @@ function updateInkSaving(event: globalThis.Event) {
 }
 
 .print-preview__page {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(3, 63mm);
   grid-template-rows: repeat(3, 88mm);
@@ -279,6 +285,15 @@ function updateInkSaving(event: globalThis.Event) {
   gap: 2mm;
   background: #fff;
   box-shadow: 0 10px 30px rgba(42, 20, 37, 0.12);
+}
+
+.print-preview__page-label {
+  position: absolute;
+  top: 2mm;
+  right: 8mm;
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-weight: 800;
 }
 
 .print-preview__slot {

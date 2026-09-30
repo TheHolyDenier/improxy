@@ -82,6 +82,27 @@ describe('useProxyWorkspace', () => {
     expect(workspace.rows.value).toHaveLength(1)
   })
 
+  it('queues long-list searches one at a time', async () => {
+    let activeRequests = 0
+    let maxActiveRequests = 0
+    const client = {
+      searchPrintings: vi.fn(async (name: string) => {
+        activeRequests += 1
+        maxActiveRequests = Math.max(maxActiveRequests, activeRequests)
+        await new Promise((resolve) => setTimeout(resolve, 5))
+        activeRequests -= 1
+        return [{ ...printing, name }]
+      }),
+    }
+    const workspace = useProxyWorkspace(client)
+
+    workspace.rawList.value = 'Lightning Bolt\nCounterspell\nDark Ritual'
+    await workspace.importList()
+
+    expect(client.searchPrintings).toHaveBeenCalledTimes(3)
+    expect(maxActiveRequests).toBe(1)
+  })
+
   it('rejects multiline quick-add input without changing the list', async () => {
     const client = {
       searchPrintings: vi.fn().mockResolvedValue([printing]),
@@ -123,7 +144,7 @@ describe('useProxyWorkspace', () => {
     client.searchPrintings.mockClear()
 
     workspace.updateRow(row?.id ?? '', { collectorNumber: '161' })
-    await new Promise((resolve) => setTimeout(resolve, 300))
+    await new Promise((resolve) => setTimeout(resolve, 500))
 
     expect(client.searchPrintings).toHaveBeenCalledWith(
       'Lightning Bolt',
@@ -224,8 +245,7 @@ describe('useProxyWorkspace', () => {
     const workspace = useProxyWorkspace(client)
 
     workspace.rawList.value = 'Lightning Bolt'
-    workspace.importList()
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await workspace.importList()
 
     expect(workspace.globalLanguage.value).toBe('es')
     expect(workspace.rows.value[0]?.selectedPrintingId).toBe('printing-1')
@@ -351,8 +371,7 @@ describe('useProxyWorkspace', () => {
     const workspace = useProxyWorkspace(client)
 
     workspace.rawList.value = 'Lightning Bolt\nCounterspell'
-    workspace.importList()
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await workspace.importList()
     const first = workspace.rows.value[0]
     const second = workspace.rows.value[1]
 

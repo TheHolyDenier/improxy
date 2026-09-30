@@ -65,14 +65,16 @@ async function addQuickCard() {
       </div>
     </header>
 
-    <CardListInput
-      v-model="rawList"
-      :error-messages="parseErrors"
-      :loading="isLoading"
-      @import="importList"
-    />
+    <div id="import-section">
+      <CardListInput
+        v-model="rawList"
+        :error-messages="parseErrors"
+        :loading="isLoading"
+        @import="importList"
+      />
+    </div>
 
-    <section class="app__workspace">
+    <section id="workspace-section" class="app__workspace">
       <BaseCard class="app__rows-card">
         <div class="app__section-heading">
           <div>
@@ -124,11 +126,13 @@ async function addQuickCard() {
         @print="print"
       />
     </section>
-    <ProxyPrintPreview
-      :pages="pages"
-      :ink-saving="inkSaving"
-      @update:ink-saving="setInkSaving"
-    />
+    <div id="preview-section">
+      <ProxyPrintPreview
+        :pages="pages"
+        :ink-saving="inkSaving"
+        @update:ink-saving="setInkSaving"
+      />
+    </div>
     <ScrollToTopButton :enabled="rows.length > 3" />
   </main>
 </template>

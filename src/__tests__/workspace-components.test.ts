@@ -289,12 +289,15 @@ describe('workspace components', () => {
     expect(wrapper.text()).toContain('Preparando…')
   })
 
-  it('renders nine print slots for one page', () => {
+  it('renders nine print slots and the page position', () => {
     const wrapper = mount(ProxyPrintPreview, {
       props: { pages: [{ copies: [{ rowId: row.id, printing }] }] },
     })
 
     expect(wrapper.findAll('.print-preview__slot')).toHaveLength(9)
+    expect(wrapper.find('.print-preview__page-label').text()).toBe(
+      'Página 1 de 1',
+    )
   })
 
   it('shows the personal non-commercial proxy disclaimer', () => {
@@ -356,24 +359,49 @@ describe('workspace components', () => {
     )
   })
 
-  it('shows a floating button to return to the top', async () => {
-    Object.defineProperty(window, 'scrollY', {
+  it('shows navigation buttons for the previous and next sections', async () => {
+    const importSection = document.createElement('section')
+    const workspaceSection = document.createElement('section')
+    const previewSection = document.createElement('section')
+    importSection.id = 'import'
+    workspaceSection.id = 'workspace'
+    previewSection.id = 'preview'
+    Object.defineProperty(importSection, 'offsetTop', { value: 0 })
+    Object.defineProperty(workspaceSection, 'offsetTop', { value: 500 })
+    Object.defineProperty(previewSection, 'offsetTop', { value: 1000 })
+    document.body.append(importSection, workspaceSection, previewSection)
+
+    const scrollIntoView = vi.fn()
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
       configurable: true,
-      value: 0,
+      value: scrollIntoView,
     })
-    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
-    const wrapper = mount(ScrollToTopButton, { props: { enabled: true } })
+    const wrapper = mount(ScrollToTopButton, {
+      props: {
+        enabled: true,
+        sectionIds: ['import', 'workspace', 'preview'],
+      },
+    })
     Object.defineProperty(window, 'scrollY', { configurable: true, value: 500 })
     window.dispatchEvent(new Event('scroll'))
 
     await wrapper.vm.$nextTick()
-    expect(wrapper.find('button').attributes('aria-label')).toBe(
-      'Subir al inicio',
+    expect(wrapper.find('button[aria-label="Sección anterior"]').exists()).toBe(
+      true,
     )
-    await wrapper.find('button').trigger('click')
+    expect(
+      wrapper.find('button[aria-label="Sección siguiente"]').exists(),
+    ).toBe(true)
+    await wrapper
+      .find('button[aria-label="Sección siguiente"]')
+      .trigger('click')
 
-    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
-    scrollTo.mockRestore()
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      behavior: 'smooth',
+      block: 'start',
+    })
+    scrollIntoView.mockRestore()
+    document.body.replaceChildren()
   })
 
   it('hides the back-to-top button until enough rows exist', async () => {
@@ -388,17 +416,32 @@ describe('workspace components', () => {
     expect(wrapper.find('button').exists()).toBe(false)
   })
 
-  it('keeps floating navigation available through the proxy preview', async () => {
+  it('shows only the next control at the first section', async () => {
     Object.defineProperty(window, 'scrollY', {
       configurable: true,
-      value: 500,
+      value: 0,
+    })
+    const importSection = document.createElement('section')
+    const workspaceSection = document.createElement('section')
+    importSection.id = 'import'
+    workspaceSection.id = 'workspace'
+    Object.defineProperty(importSection, 'offsetTop', { value: 0 })
+    Object.defineProperty(workspaceSection, 'offsetTop', { value: 500 })
+    document.body.append(importSection, workspaceSection)
+
+    const wrapper = mount(ScrollToTopButton, {
+      props: { enabled: true, sectionIds: ['import', 'workspace'] },
     })
 
-    const wrapper = mount(ScrollToTopButton, { props: { enabled: true } })
-
     await wrapper.vm.$nextTick()
-    expect(wrapper.find('button').exists()).toBe(true)
+    expect(wrapper.find('button[aria-label="Sección anterior"]').exists()).toBe(
+      false,
+    )
+    expect(
+      wrapper.find('button[aria-label="Sección siguiente"]').exists(),
+    ).toBe(true)
 
     wrapper.unmount()
+    document.body.replaceChildren()
   })
 })
