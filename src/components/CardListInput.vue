@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import { onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BaseButton from './ui/BaseButton.vue'
 import BaseCard from './ui/BaseCard.vue'
 import BaseTextarea from './ui/BaseTextarea.vue'
 
-defineProps<{
+const props = defineProps<{
   modelValue: string
   errorMessages: string[]
 }>()
@@ -16,6 +17,32 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const visibleErrors = ref<string[]>([])
+let errorTimer: ReturnType<typeof globalThis.setTimeout> | undefined
+
+function dismissErrors() {
+  visibleErrors.value = []
+  if (errorTimer) {
+    globalThis.clearTimeout(errorTimer)
+    errorTimer = undefined
+  }
+}
+
+watch(
+  () => props.errorMessages,
+  (messages) => {
+    dismissErrors()
+    if (!messages.length) {
+      return
+    }
+
+    visibleErrors.value = [...messages]
+    errorTimer = globalThis.setTimeout(dismissErrors, 5000)
+  },
+  { immediate: true },
+)
+
+onBeforeUnmount(dismissErrors)
 </script>
 
 <template>
@@ -36,13 +63,30 @@ const { t } = useI18n()
       :model-value="modelValue"
       :label="t('import.label')"
       :placeholder="t('import.placeholder')"
+      :invalid="errorMessages.length > 0"
       @update:model-value="emit('update:modelValue', $event)"
     />
     <div class="import-card__actions">
-      <span v-if="errorMessages.length" class="import-card__error">
-        {{ errorMessages.join(' · ') }}
-      </span>
       <BaseButton @click="emit('import')">{{ t('import.convert') }}</BaseButton>
+    </div>
+    <div v-if="visibleErrors.length" class="import-card__toast" role="alert">
+      <div class="import-card__errors">
+        <span
+          v-for="errorMessage in visibleErrors"
+          :key="errorMessage"
+          class="import-card__error"
+        >
+          {{ errorMessage }}
+        </span>
+      </div>
+      <BaseButton
+        type="button"
+        variant="ghost"
+        :aria-label="t('errors.close')"
+        @click="dismissErrors"
+      >
+        ×
+      </BaseButton>
     </div>
   </BaseCard>
 </template>
@@ -73,6 +117,11 @@ const { t } = useI18n()
   color: var(--ink);
   font-size: 1.8rem;
   letter-spacing: -0.04em;
+}
+
+.import-card__subtitle {
+  margin: 4px 0 0;
+  color: var(--muted);
 }
 
 .import-card__badge {
@@ -109,8 +158,36 @@ const { t } = useI18n()
 }
 
 .import-card__error {
-  margin-right: auto;
   color: #a42a43;
   font-size: 0.82rem;
+}
+
+.import-card__errors {
+  display: grid;
+  gap: 3px;
+}
+
+.import-card__toast {
+  position: fixed;
+  z-index: 20;
+  top: 20px;
+  right: 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: min(440px, calc(100vw - 40px));
+  padding: 14px 14px 14px 16px;
+  border: 1px solid #ed7590;
+  border-radius: 14px;
+  background: #fff5f7;
+  box-shadow: 0 16px 34px rgba(42, 20, 37, 0.18);
+}
+
+.import-card__toast .button {
+  flex: 0 0 auto;
+  min-height: 28px;
+  padding: 2px 7px;
+  color: #a42a43;
 }
 </style>

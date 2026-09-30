@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CardListInput from './components/CardListInput.vue'
@@ -10,6 +11,7 @@ import ReadinessSummary from './components/ReadinessSummary.vue'
 import ScrollToTopButton from './components/ScrollToTopButton.vue'
 import BaseButton from './components/ui/BaseButton.vue'
 import BaseCard from './components/ui/BaseCard.vue'
+import BaseInput from './components/ui/BaseInput.vue'
 import { useProxyWorkspace } from './composables/useProxyWorkspace'
 
 const {
@@ -23,11 +25,9 @@ const {
   pages,
   readyToPrint,
   importList,
-  searchRow,
   updateRow,
-  addRow,
+  addCardFromSyntax,
   removeRow,
-  duplicateRow,
   setGlobalLanguage,
   setRowLanguage,
   setInkSaving,
@@ -35,6 +35,17 @@ const {
 } = useProxyWorkspace()
 
 const { t } = useI18n()
+const quickAddValue = ref('')
+
+async function addQuickCard() {
+  const value = quickAddValue.value.trim()
+  if (!value) {
+    return
+  }
+
+  await addCardFromSyntax(value)
+  quickAddValue.value = ''
+}
 </script>
 
 <template>
@@ -69,6 +80,17 @@ const { t } = useI18n()
             @update:model-value="setGlobalLanguage"
           />
         </div>
+        <div class="app__quick-add">
+          <BaseInput
+            v-model="quickAddValue"
+            :label="t('import.quickAddLabel')"
+            :placeholder="t('import.quickAddPlaceholder')"
+            @keyup.enter="addQuickCard"
+          />
+          <BaseButton variant="secondary" @click="addQuickCard">
+            {{ t('import.quickAdd') }}
+          </BaseButton>
+        </div>
         <div v-if="!rows.length" class="app__empty-state">
           {{ t('workspace.empty') }}
         </div>
@@ -78,14 +100,13 @@ const { t } = useI18n()
               :row="row"
               @update="updateRow(row.id, $event)"
               @remove="removeRow(row.id)"
-              @duplicate="duplicateRow(row.id)"
-              @search="searchRow(row)"
             />
             <CardResultCard
-              v-if="row.printings.length"
               :printings="row.printings"
               :selected-printing-id="row.selectedPrintingId"
               :language="row.languageOverride || globalLanguage"
+              :status="row.status"
+              :error-message="row.errorMessage"
               @update:selected-printing-id="
                 updateRow(row.id, { selectedPrintingId: $event })
               "
@@ -93,11 +114,7 @@ const { t } = useI18n()
             />
           </div>
         </div>
-        <BaseButton variant="secondary" @click="addRow">
-          {{ t('workspace.add') }}
-        </BaseButton>
       </BaseCard>
-
       <ReadinessSummary
         :total-copies="totalCopies"
         :unresolved-count="unresolvedCount"
@@ -105,7 +122,6 @@ const { t } = useI18n()
         @print="print"
       />
     </section>
-
     <ProxyPrintPreview
       :pages="pages"
       :ink-saving="inkSaving"
@@ -179,6 +195,12 @@ const { t } = useI18n()
   margin-top: 18px;
 }
 
+.app__section-subtitle {
+  max-width: 680px;
+  margin: 0;
+  color: var(--muted);
+}
+
 .app__rows-card {
   align-self: start;
   display: flex;
@@ -217,6 +239,16 @@ const { t } = useI18n()
 .app__row-group {
   display: grid;
   gap: 10px;
+}
+
+.app__quick-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.app__quick-add .button {
+  white-space: nowrap;
 }
 
 @media (max-width: 820px) {

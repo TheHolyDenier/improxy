@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { ScryfallPrinting } from '@/domain/card'
+import type { RowStatus, ScryfallPrinting } from '@/domain/card'
 import { cardLanguageCodes } from '@/i18n'
 import BaseSelect from './ui/BaseSelect.vue'
 
@@ -10,6 +10,8 @@ const props = defineProps<{
   printings: ScryfallPrinting[]
   selectedPrintingId: string
   language: string
+  status: RowStatus
+  errorMessage: string
 }>()
 
 const emit = defineEmits<{
@@ -18,17 +20,15 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const selectedPrinting = computed(() =>
+  props.printings.find((printing) => printing.id === props.selectedPrintingId),
+)
 const languageOptions = computed(() =>
   cardLanguageCodes.map((value) => ({
     value,
     label: t(`cardLanguages.${value}`),
   })),
 )
-
-const selectedPrinting = computed(() =>
-  props.printings.find((printing) => printing.id === props.selectedPrintingId),
-)
-
 const printingGroups = computed(() => {
   const groups = new Map<
     string,
@@ -47,12 +47,11 @@ const printingGroups = computed(() => {
 
   return [...groups.values()]
 })
-
-const selectedEditionKey = computed(() => {
-  const printing = selectedPrinting.value
-  return printing ? `${printing.setCode}:${printing.collectorNumber}` : ''
-})
-
+const selectedEditionKey = computed(() =>
+  selectedPrinting.value
+    ? `${selectedPrinting.value.setCode}:${selectedPrinting.value.collectorNumber}`
+    : '',
+)
 const printingOptions = computed(() =>
   printingGroups.value.map((group) => {
     const printing = group.printings[0]
@@ -67,7 +66,7 @@ const isLanguageFallback = () =>
   selectedPrinting.value?.language !== undefined &&
   selectedPrinting.value.language !== props.language
 
-const selectPrinting = (editionKey: string) => {
+function selectPrinting(editionKey: string) {
   const group = printingGroups.value.find(
     (candidate) => candidate.key === editionKey,
   )
@@ -85,7 +84,19 @@ const selectPrinting = (editionKey: string) => {
 </script>
 
 <template>
-  <div class="result-card" :class="{ 'result-card--empty': !selectedPrinting }">
+  <div v-if="status === 'loading'" class="result-card result-card--loading">
+    <div class="result-card__skeleton result-card__skeleton--image" />
+    <div class="result-card__details">
+      <span class="result-card__skeleton result-card__skeleton--line" />
+      <span class="result-card__skeleton result-card__skeleton--title" />
+      <span class="result-card__skeleton result-card__skeleton--line" />
+    </div>
+  </div>
+  <div
+    v-else
+    class="result-card"
+    :class="{ 'result-card--empty': !selectedPrinting }"
+  >
     <img
       v-if="selectedPrinting"
       class="result-card__image"
@@ -110,25 +121,26 @@ const selectPrinting = (editionKey: string) => {
           }}
         </p>
       </template>
-      <p v-else class="result-card__error">
-        {{
-          t('result.languageUnavailable', {
-            language: t(`cardLanguages.${language}`),
-          })
-        }}
+      <p v-if="status === 'error'" class="result-card__error">
+        {{ errorMessage || t('result.empty') }}
       </p>
-      <BaseSelect
-        :model-value="selectedEditionKey"
-        :label="t('result.printing')"
-        :options="printingOptions"
-        @update:model-value="selectPrinting($event)"
-      />
-      <BaseSelect
-        :model-value="language"
-        :label="t('language.card')"
-        :options="languageOptions"
-        @update:model-value="emit('update:language', $event)"
-      />
+      <p v-else-if="!selectedPrinting" class="result-card__error">
+        {{ t('result.empty') }}
+      </p>
+      <div v-if="printings.length" class="result-card__controls">
+        <BaseSelect
+          :model-value="selectedEditionKey"
+          :label="t('result.printing')"
+          :options="printingOptions"
+          @update:model-value="selectPrinting($event)"
+        />
+        <BaseSelect
+          :model-value="language"
+          :label="t('language.card')"
+          :options="languageOptions"
+          @update:model-value="emit('update:language', $event)"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -159,6 +171,41 @@ const selectPrinting = (editionKey: string) => {
   flex: 1;
   align-content: center;
   gap: 8px;
+}
+
+.result-card__controls {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.result-card__skeleton {
+  display: block;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #eadcf1 25%, #f7eefa 50%, #eadcf1 75%);
+  background-size: 200% 100%;
+  animation: result-card-shimmer 1.2s ease-in-out infinite;
+}
+
+.result-card__skeleton--image {
+  width: 96px;
+  height: 134px;
+}
+
+.result-card__skeleton--line {
+  width: 42%;
+  height: 12px;
+}
+
+.result-card__skeleton--title {
+  width: 72%;
+  height: 24px;
+}
+
+@keyframes result-card-shimmer {
+  to {
+    background-position: -200% 0;
+  }
 }
 
 .result-card__eyebrow {

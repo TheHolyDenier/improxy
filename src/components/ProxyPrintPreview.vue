@@ -104,6 +104,7 @@ function updateInkSaving(event: { target: unknown }) {
       <div>
         <p class="print-preview__eyebrow">{{ t('preview.kicker') }}</p>
         <h2 class="print-preview__title">{{ t('preview.title') }}</h2>
+        <p class="print-preview__subtitle">{{ t('preview.subtitle') }}</p>
       </div>
       <span class="print-preview__badge">{{ t('preview.size') }}</span>
     </div>
@@ -195,6 +196,11 @@ function updateInkSaving(event: { target: unknown }) {
   color: var(--ink);
   font-size: 1.8rem;
   letter-spacing: -0.04em;
+}
+
+.print-preview__subtitle {
+  margin: 4px 0 0;
+  color: var(--muted);
 }
 
 .print-preview__badge {

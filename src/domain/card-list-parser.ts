@@ -1,6 +1,8 @@
 import type { CardListEntry, ParseResult } from './card'
 
 const entryPattern = /^(?:(\d+)\s+)?(.+?)(?:\s+\(([^()]+)\))?$/
+const selectorPattern = /(?:^|\s)(e|cn):(\S+)/gi
+const malformedSelectorPattern = /(?:^|\s)(e|cn):(?=\s|$)/i
 
 export class CardListParser {
   parse(input: string): ParseResult {
@@ -13,16 +15,42 @@ export class CardListParser {
         return
       }
 
-      const match = entryPattern.exec(value)
-      const quantity = match?.[1] ? Number.parseInt(match[1], 10) : 1
-      const name = match?.[2]?.trim() ?? ''
-      const setCode = match?.[3]?.trim().toUpperCase() ?? ''
-
-      if (!match || !name) {
+      if (malformedSelectorPattern.test(value)) {
         errors.push({
           line: index + 1,
           value: rawLine,
-          message: 'Escribe al menos el nombre de una carta.',
+          message: 'El set y el número de carta deben tener un valor.',
+        })
+        return
+      }
+
+      const match = entryPattern.exec(value)
+      const quantity = match?.[1] ? Number.parseInt(match[1], 10) : 1
+      const selectorMatches = [...value.matchAll(selectorPattern)]
+      const selectorValues = new Map(
+        selectorMatches.map((selector) => [
+          selector[1]?.toLowerCase(),
+          selector[2]?.trim(),
+        ]),
+      )
+      const name = (match?.[2] ?? value)
+        .replace(selectorPattern, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+      const setCode =
+        selectorValues.get('e')?.toUpperCase() ??
+        match?.[3]?.trim().toUpperCase() ??
+        ''
+      const collectorNumber = selectorValues.get('cn') ?? ''
+
+      const hasSetAndCollectorNumber = Boolean(setCode && collectorNumber)
+
+      if (!match || (!name && !hasSetAndCollectorNumber)) {
+        errors.push({
+          line: index + 1,
+          value: rawLine,
+          message:
+            'Escribe el nombre de una carta o indica la edición y el número de carta.',
         })
         return
       }
@@ -38,9 +66,11 @@ export class CardListParser {
 
       entries.push({
         id: crypto.randomUUID(),
+        sourceLine: index + 1,
         name,
         quantity,
         setCode,
+        collectorNumber,
       })
     })
 

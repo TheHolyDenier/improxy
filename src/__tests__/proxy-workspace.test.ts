@@ -57,6 +57,65 @@ describe('useProxyWorkspace', () => {
     expect(workspace.totalCopies.value).toBe(3)
   })
 
+  it('searches automatically when the collector number changes', async () => {
+    const client = {
+      searchPrintings: vi.fn().mockResolvedValue([printing]),
+    }
+    const workspace = useProxyWorkspace(client)
+
+    workspace.rawList.value = 'Lightning Bolt'
+    await workspace.importList()
+    const row = workspace.rows.value[0]
+    client.searchPrintings.mockClear()
+
+    workspace.updateRow(row?.id ?? '', { collectorNumber: '161' })
+    await new Promise((resolve) => setTimeout(resolve, 300))
+
+    expect(client.searchPrintings).toHaveBeenCalledWith(
+      'Lightning Bolt',
+      '',
+      'es',
+      '161',
+    )
+  })
+
+  it('removes cards not found during import and reports their source line', async () => {
+    const client = {
+      searchPrintings: vi
+        .fn()
+        .mockImplementation((name: string) =>
+          Promise.resolve(name === 'Lightning Bolt' ? [printing] : []),
+        ),
+    }
+    const workspace = useProxyWorkspace(client)
+
+    workspace.rawList.value = 'Lightning Bolt\nUnknown Card'
+    await workspace.importList()
+
+    expect(workspace.rows.value).toHaveLength(1)
+    expect(workspace.rows.value[0]?.name).toBe('Lightning Bolt')
+    expect(workspace.parseErrors.value.join(' ')).toContain('Carta 2')
+  })
+
+  it('resolves a card using only set and collector number', async () => {
+    const client = {
+      searchPrintings: vi.fn().mockResolvedValue([printing]),
+    }
+    const workspace = useProxyWorkspace(client)
+
+    workspace.rawList.value = 'e:LEA cn:161'
+    await workspace.importList()
+
+    expect(workspace.parseErrors.value).toEqual([])
+    expect(workspace.rows.value[0]).toMatchObject({
+      name: 'Lightning Bolt',
+      setCode: 'LEA',
+      collectorNumber: '161',
+      status: 'resolved',
+      selectedPrintingId: printing.id,
+    })
+  })
+
   it('falls back to English when the requested language is unavailable', async () => {
     const client = {
       searchPrintings: vi.fn().mockResolvedValue([printing]),
@@ -72,14 +131,14 @@ describe('useProxyWorkspace', () => {
     expect(workspace.readyToPrint.value).toBe(true)
   })
 
-  it('duplicates a row as a fresh pending row', () => {
+  it('duplicates a row as a fresh editable row', async () => {
     const client = {
       searchPrintings: vi.fn().mockResolvedValue([printing]),
     }
     const workspace = useProxyWorkspace(client)
 
     workspace.rawList.value = 'Lightning Bolt'
-    workspace.importList()
+    await workspace.importList()
     const original = workspace.rows.value[0]
 
     workspace.duplicateRow(original?.id ?? '')
@@ -90,6 +149,7 @@ describe('useProxyWorkspace', () => {
       quantity: 1,
       status: 'idle',
       selectedPrintingId: '',
+      collectorNumber: '',
     })
     expect(workspace.rows.value[1]?.id).not.toBe(original?.id)
   })
@@ -101,7 +161,7 @@ describe('useProxyWorkspace', () => {
     const workspace = useProxyWorkspace(client)
 
     workspace.rawList.value = 'Lightning Bolt\nCounterspell'
-    workspace.importList()
+    await workspace.importList()
     await new Promise((resolve) => setTimeout(resolve, 0))
     const first = workspace.rows.value[0]
     const second = workspace.rows.value[1]
@@ -121,7 +181,7 @@ describe('useProxyWorkspace', () => {
     const workspace = useProxyWorkspace(client)
 
     workspace.rawList.value = 'Lightning Bolt'
-    workspace.importList()
+    await workspace.importList()
     await new Promise((resolve) => setTimeout(resolve, 0))
     const row = workspace.rows.value[0]
     if (!row) {

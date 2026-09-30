@@ -15,6 +15,7 @@ describe('CardListParser', () => {
       name: 'Lightning Bolt',
       quantity: 1,
       setCode: '',
+      collectorNumber: '',
     })
   })
 
@@ -25,7 +26,44 @@ describe('CardListParser', () => {
       name: 'Counterspell',
       quantity: 2,
       setCode: 'STA',
+      collectorNumber: '',
     })
+  })
+
+  it('parses set and collector number selectors', () => {
+    const result = new CardListParser().parse('2 Counterspell e:inr cn:13')
+
+    expect(result.entries[0]).toMatchObject({
+      name: 'Counterspell',
+      quantity: 2,
+      setCode: 'INR',
+      collectorNumber: '13',
+    })
+  })
+
+  it('accepts set and collector number without a card name', () => {
+    const result = new CardListParser().parse('e:INR cn:13')
+
+    expect(result.errors).toEqual([])
+    expect(result.entries[0]).toMatchObject({
+      name: '',
+      setCode: 'INR',
+      collectorNumber: '13',
+    })
+  })
+
+  it('rejects a set selector without its collector number or name', () => {
+    const result = new CardListParser().parse('e:INR')
+
+    expect(result.entries).toHaveLength(0)
+    expect(result.errors[0]?.message).toContain('nombre')
+  })
+
+  it('reports malformed selectors', () => {
+    const result = new CardListParser().parse('Counterspell e: cn:')
+
+    expect(result.entries).toHaveLength(0)
+    expect(result.errors[0]?.message).toContain('valor')
   })
 
   it('ignores blank lines and keeps valid entries beside errors', () => {

@@ -21,27 +21,14 @@ const { t } = useI18n()
   <BaseCard class="readiness-card">
     <div>
       <p class="readiness-card__eyebrow">{{ t('readiness.kicker') }}</p>
-      <h2 v-if="totalCopies" class="readiness-card__title">
+      <h2 class="readiness-card__title">{{ t('readiness.title') }}</h2>
+      <p class="readiness-card__count">
         {{
           t('readiness.prepared', {
             count: totalCopies,
             plural: totalCopies,
           })
         }}
-      </h2>
-      <h2 v-else class="readiness-card__title">
-        {{ t('readiness.empty') }}
-      </h2>
-      <p v-if="unresolvedCount" class="readiness-card__message">
-        {{
-          t('readiness.unresolved', {
-            count: unresolvedCount,
-            plural: unresolvedCount,
-          })
-        }}
-      </p>
-      <p v-else-if="totalCopies" class="readiness-card__message">
-        {{ t('readiness.complete') }}
       </p>
     </div>
     <BaseButton :disabled="!ready" @click="emit('print')">
@@ -80,6 +67,12 @@ const { t } = useI18n()
   margin: 0;
   font-size: 1.8rem;
   letter-spacing: -0.04em;
+}
+
+.readiness-card__count {
+  margin: 4px 0 0;
+  color: #fff;
+  font-weight: 800;
 }
 
 .readiness-card__message {

@@ -3,6 +3,7 @@ defineProps<{
   modelValue: string
   label: string
   placeholder?: string
+  invalid?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -26,6 +27,7 @@ function handleInput(event: { target: unknown }) {
 <template>
   <textarea
     class="textarea"
+    :class="{ 'textarea--invalid': invalid }"
     :value="modelValue"
     :aria-label="label"
     :placeholder="placeholder"
@@ -52,5 +54,10 @@ function handleInput(event: { target: unknown }) {
 .textarea:focus {
   border-color: var(--pink);
   box-shadow: 0 0 0 4px rgba(237, 63, 122, 0.13);
+}
+
+.textarea--invalid {
+  border-color: #ed7590;
+  box-shadow: 0 0 0 4px rgba(237, 63, 122, 0.1);
 }
 </style>

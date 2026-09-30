@@ -28,9 +28,11 @@ const printing = {
 
 const row: CardRowState = {
   id: 'row-1',
+  sourceLine: 1,
   name: 'Lightning Bolt',
   quantity: 1,
   setCode: '',
+  collectorNumber: '',
   status: 'resolved',
   errorMessage: '',
   printings: [printing],
@@ -44,19 +46,41 @@ describe('workspace components', () => {
       props: { modelValue: '', errorMessages: [] },
     })
 
-    await wrapper.find('button').trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Añadir cartas')
+      ?.trigger('click')
 
     expect(wrapper.emitted('import')).toHaveLength(1)
   })
 
-  it('renders an editable row and emits removal', async () => {
+  it('shows import errors as a floating notification and dismisses them', async () => {
+    vi.useFakeTimers()
+    const wrapper = mount(CardListInput, {
+      props: {
+        modelValue: '',
+        errorMessages: ['Carta 1: Falta información.'],
+      },
+    })
+
+    expect(wrapper.find('[role="alert"]').text()).toContain(
+      'Carta 1: Falta información.',
+    )
+
+    vi.advanceTimersByTime(5000)
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    vi.useRealTimers()
+  })
+
+  it('renders a read-only row and emits removal', async () => {
     const wrapper = mount(CardRowEditor, { props: { row } })
 
     expect(wrapper.text()).toContain('Nombre')
     expect(wrapper.text()).toContain('Cantidad')
-    expect(wrapper.text()).toContain('Set opcional')
-    expect(wrapper.text()).toContain('1 edición')
-    expect(wrapper.text()).not.toContain('1 ediciones')
+    expect(wrapper.text()).not.toContain('Edición')
+    expect(wrapper.text()).not.toContain('N.º de carta')
     expect(wrapper.find('.row-number').exists()).toBe(false)
 
     await wrapper.find('button.button--danger').trigger('click')
@@ -64,19 +88,29 @@ describe('workspace components', () => {
     expect(wrapper.emitted('remove')).toHaveLength(1)
   })
 
-  it('searches a row without emitting a duplicate action', async () => {
+  it('renders quantity controls without search or duplicate actions', async () => {
     const wrapper = mount(CardRowEditor, { props: { row } })
-    const searchButton = wrapper
-      .findAll('button')
-      .find((button) => button.text() === 'Buscar')
-    if (!searchButton) {
-      throw new Error('Search button was not rendered')
-    }
+    expect(wrapper.find('button[aria-label="Buscar"]').exists()).toBe(false)
+    expect(wrapper.find('button[aria-label="Duplicar"]').exists()).toBe(false)
 
-    await searchButton.trigger('click')
+    const increase = wrapper.find('button[aria-label="Aumentar cantidad"]')
+    await increase.trigger('click')
 
-    expect(wrapper.emitted('search')).toHaveLength(1)
-    expect(wrapper.emitted('duplicate')).toBeUndefined()
+    expect(wrapper.emitted('update')?.at(-1)).toEqual([{ quantity: 2 }])
+  })
+
+  it('shows resolution errors in the result card', () => {
+    const wrapper = mount(CardResultCard, {
+      props: {
+        printings: [],
+        selectedPrintingId: '',
+        language: 'es',
+        status: 'error',
+        errorMessage: 'No encontramos esa carta en Scryfall.',
+      },
+    })
+
+    expect(wrapper.text()).toContain('No encontramos esa carta en Scryfall.')
   })
 
   it('renders printing metadata', () => {
@@ -85,23 +119,28 @@ describe('workspace components', () => {
         printings: [printing],
         selectedPrintingId: printing.id,
         language: 'en',
+        status: 'resolved',
+        errorMessage: '',
       },
     })
 
     expect(wrapper.text()).toContain('Limited Edition Alpha')
   })
 
-  it('groups language variants into one edition option', () => {
+  it('exposes printing and language selectors in the result card', () => {
     const spanishPrinting = { ...printing, id: 'printing-es', language: 'es' }
     const wrapper = mount(CardResultCard, {
       props: {
         printings: [printing, spanishPrinting],
         selectedPrintingId: printing.id,
         language: 'es',
+        status: 'resolved',
+        errorMessage: '',
       },
     })
 
-    expect(wrapper.findAll('select')[0]?.findAll('option')).toHaveLength(1)
+    expect(wrapper.findAll('select')).toHaveLength(2)
+    expect(wrapper.find('input').exists()).toBe(false)
   })
 
   it('marks an English fallback when Spanish is unavailable', () => {
@@ -110,34 +149,28 @@ describe('workspace components', () => {
         printings: [printing],
         selectedPrintingId: printing.id,
         language: 'es',
+        status: 'resolved',
+        errorMessage: '',
       },
     })
 
-    expect(wrapper.text()).toContain('No hay una impresión en Español')
+    expect(wrapper.text()).toContain('No hay una impresión en español')
   })
 
-  it('changes the printing without changing the language preference', async () => {
-    const secondPrinting = {
-      ...printing,
-      id: 'printing-2',
-      setCode: 'frc',
-      setName: 'Reality Fracture Commander',
-      collectorNumber: '25',
-    }
+  it('keeps resolved card identity read-only', () => {
     const wrapper = mount(CardResultCard, {
       props: {
-        printings: [printing, secondPrinting],
+        printings: [printing],
         selectedPrintingId: printing.id,
         language: 'en',
+        status: 'resolved',
+        errorMessage: '',
       },
     })
 
-    await wrapper.find('select').setValue('frc:25')
-
-    expect(wrapper.emitted('update:language')).toBeUndefined()
-    expect(wrapper.emitted('update:selectedPrintingId')?.[0]).toEqual([
-      secondPrinting.id,
-    ])
+    expect(wrapper.text()).toContain('Limited Edition Alpha')
+    expect(wrapper.findAll('select')).toHaveLength(2)
+    expect(wrapper.findAll('input')).toHaveLength(0)
   })
 
   it('renders global language controls', () => {

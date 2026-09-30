@@ -15,9 +15,11 @@ const printing = {
 
 const row = (quantity: number): CardRowState => ({
   id: 'row-1',
+  sourceLine: 1,
   name: 'Lightning Bolt',
   quantity,
   setCode: '',
+  collectorNumber: '',
   status: 'resolved',
   errorMessage: '',
   printings: [printing],

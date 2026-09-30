@@ -2,9 +2,11 @@ export type RowStatus = 'idle' | 'loading' | 'resolved' | 'error'
 
 export interface CardListEntry {
   readonly id: string
+  readonly sourceLine: number
   name: string
   quantity: number
   setCode: string
+  collectorNumber: string
 }
 
 export interface ScryfallPrinting {

@@ -50,6 +50,57 @@ describe('ScryfallClient', () => {
     expect(String(fetcher.mock.calls[0]?.[0])).toContain('lang%3Aen')
   })
 
+  it('filters results by set and collector number', async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: [card, { ...card, id: 'card-2', collector_number: '162' }],
+        }),
+        { status: 200 },
+      ),
+    )
+
+    const result = await new ScryfallClient(fetcher).searchPrintings(
+      'Lightning Bolt',
+      'LEA',
+      'en',
+      '161',
+    )
+
+    expect(result).toHaveLength(1)
+    expect(result[0]?.collectorNumber).toBe('161')
+    expect(String(fetcher.mock.calls[0]?.[0])).toContain('set%3Alea')
+    expect(String(fetcher.mock.calls[0]?.[0])).toContain('cn%3A161')
+  })
+
+  it('treats Scryfall not-found responses as an empty result', async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response('', { status: 404 }))
+
+    await expect(
+      new ScryfallClient(fetcher).searchPrintings('Unknown Card'),
+    ).resolves.toEqual([])
+  })
+
+  it('can search by set and collector number without a name', async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ data: [card] }), {
+        status: 200,
+      }),
+    )
+
+    const result = await new ScryfallClient(fetcher).searchPrintings(
+      '',
+      'LEA',
+      'en',
+      '161',
+    )
+
+    expect(result).toHaveLength(1)
+    expect(String(fetcher.mock.calls[0]?.[0])).toContain('set%3Alea')
+    expect(String(fetcher.mock.calls[0]?.[0])).toContain('cn%3A161')
+    expect(String(fetcher.mock.calls[0]?.[0])).not.toContain('%22%22')
+  })
+
   it('maps rate limits to a recoverable error', async () => {
     const fetcher = vi.fn().mockResolvedValue(
       new Response('', {

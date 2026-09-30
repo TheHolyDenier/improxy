@@ -21,6 +21,11 @@ interface ScryfallSearchResponse {
   data: ScryfallCard[]
 }
 
+interface ScryfallErrorResponse {
+  object: 'error'
+  status: number
+}
+
 export class ScryfallError extends Error {
   constructor(
     message: string,
@@ -46,14 +51,20 @@ export class ScryfallClient {
     name: string,
     setCode = '',
     language = 'en',
+    collectorNumber = '',
   ): Promise<ScryfallPrinting[]> {
-    const requestKey = `${name.trim().toLowerCase()}::${setCode.toLowerCase()}::${language}`
+    const requestKey = `${name.trim().toLowerCase()}::${setCode.toLowerCase()}::${collectorNumber.trim()}::${language}`
     const pendingRequest = this.pendingRequests.get(requestKey)
     if (pendingRequest) {
       return pendingRequest
     }
 
-    const request = this.fetchPrintings(name, setCode, language)
+    const request = this.fetchPrintings(
+      name,
+      setCode,
+      language,
+      collectorNumber,
+    )
     this.pendingRequests.set(requestKey, request)
     try {
       return await request
@@ -68,16 +79,30 @@ export class ScryfallClient {
     name: string,
     setCode: string,
     language: string,
+    collectorNumber: string,
   ): Promise<ScryfallPrinting[]> {
     const languageQuery =
       language === 'en' ? 'lang:en' : `(lang:${language} or lang:en)`
-    const query = `!"${name.trim()}" ${languageQuery}`
+    const selectors = [
+      setCode ? `set:${setCode.trim().toLowerCase()}` : '',
+      collectorNumber ? `cn:${collectorNumber.trim()}` : '',
+    ]
+      .filter(Boolean)
+      .join(' ')
+    const nameQuery = name.trim() ? `!"${name.trim()}"` : ''
+    const query = [nameQuery, languageQuery, selectors]
+      .filter(Boolean)
+      .join(' ')
     const url = new URL('/cards/search', this.baseUrl)
     url.searchParams.set('q', query)
     url.searchParams.set('unique', 'prints')
     url.searchParams.set('order', 'released')
 
     const response = await this.fetcher(url)
+    if (response.status === 404) {
+      return []
+    }
+
     if (!response.ok) {
       throw new ScryfallError(
         response.status === 429
@@ -88,6 +113,9 @@ export class ScryfallClient {
     }
 
     const payload: unknown = await response.json()
+    if (this.isErrorResponse(payload) && payload.status === 404) {
+      return []
+    }
     if (!this.isSearchResponse(payload)) {
       throw new ScryfallError('Scryfall devolvió una respuesta no válida.')
     }
@@ -97,6 +125,11 @@ export class ScryfallClient {
       .filter((printing): printing is ScryfallPrinting => printing !== null)
       .filter(
         (printing) => !setCode || printing.setCode === setCode.toLowerCase(),
+      )
+      .filter(
+        (printing) =>
+          !collectorNumber ||
+          printing.collectorNumber === collectorNumber.trim(),
       )
   }
 
@@ -135,6 +168,17 @@ export class ScryfallClient {
           'name' in card &&
           typeof card.name === 'string',
       )
+    )
+  }
+
+  private isErrorResponse(value: unknown): value is ScryfallErrorResponse {
+    return (
+      typeof value === 'object' &&
+      value !== null &&
+      'object' in value &&
+      value.object === 'error' &&
+      'status' in value &&
+      typeof value.status === 'number'
     )
   }
 }
