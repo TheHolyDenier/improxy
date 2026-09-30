@@ -296,7 +296,6 @@ function updateInkSaving(event: { target: unknown }) {
 }
 
 .print-preview__disclaimer {
-  max-width: 820px;
   margin: 14px 0 0;
   color: var(--muted);
   font-size: 0.7rem;
