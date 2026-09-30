@@ -98,6 +98,8 @@ export const i18n = createI18n({
         size: '63 × 88 MM',
         empty: 'Añade al menos una carta para ver la cuadrícula 3x3.',
         inkSaving: 'B/N',
+        disclaimer:
+          'Proxies hechos para uso personal y sin ánimo de lucro. No se venden ni se distribuyen. Los datos e imágenes de las cartas proceden de Scryfall y pertenecen a sus respectivos propietarios. Magic: The Gathering es una marca de Wizards of the Coast.',
       },
       navigation: {
         backToTop: 'Subir al inicio',

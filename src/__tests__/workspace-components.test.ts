@@ -271,6 +271,15 @@ describe('workspace components', () => {
     expect(wrapper.findAll('.print-preview__slot')).toHaveLength(9)
   })
 
+  it('shows the personal non-commercial proxy disclaimer', () => {
+    const wrapper = mount(ProxyPrintPreview, {
+      props: { pages: [] },
+    })
+
+    expect(wrapper.text()).toContain('uso personal y sin ánimo de lucro')
+    expect(wrapper.text()).toContain('Scryfall')
+  })
+
   it('renders and emits the ink-saving preference', async () => {
     const wrapper = mount(ProxyPrintPreview, {
       props: {

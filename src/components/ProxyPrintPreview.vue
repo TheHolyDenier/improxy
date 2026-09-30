@@ -160,6 +160,7 @@ function updateInkSaving(event: { target: unknown }) {
         {{ t('preview.empty') }}
       </p>
     </div>
+    <p class="print-preview__disclaimer">{{ t('preview.disclaimer') }}</p>
   </BaseCard>
 </template>
 
@@ -292,6 +293,14 @@ function updateInkSaving(event: { target: unknown }) {
   border-radius: 16px;
   color: var(--muted);
   text-align: center;
+}
+
+.print-preview__disclaimer {
+  max-width: 820px;
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.45;
 }
 
 @media print {
