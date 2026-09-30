@@ -307,6 +307,50 @@ describe('useProxyWorkspace', () => {
     expect(second?.selectedPrintingId).toBe('printing-1')
   })
 
+  it('changes language within the selected edition', async () => {
+    const iceAgeEnglish = {
+      ...printing,
+      id: 'printing-ice-en',
+      setCode: 'ice',
+      setName: 'Ice Age',
+      language: 'en',
+    }
+    const iceAgeSpanish = {
+      ...iceAgeEnglish,
+      id: 'printing-ice-es',
+      language: 'es',
+    }
+    const foundations = {
+      ...printing,
+      id: 'printing-foundations',
+      setCode: 'fdn',
+      setName: 'Foundations',
+      language: 'en',
+    }
+    const client = {
+      searchPrintings: vi
+        .fn()
+        .mockResolvedValue([foundations, iceAgeEnglish, iceAgeSpanish]),
+    }
+    const workspace = useProxyWorkspace(client)
+
+    workspace.rawList.value = 'Counterspell'
+    await workspace.importList()
+    const row = workspace.rows.value[0]
+    if (!row) {
+      throw new Error('Expected an imported row')
+    }
+
+    workspace.updateRow(row.id, { selectedPrintingId: iceAgeEnglish.id })
+    workspace.setRowLanguage(row.id, 'es')
+
+    expect(row.selectedPrintingId).toBe(iceAgeSpanish.id)
+    expect(
+      row.printings.find((candidate) => candidate.id === row.selectedPrintingId)
+        ?.setCode,
+    ).toBe('ice')
+  })
+
   it('delegates printing to the browser', () => {
     const print = vi.spyOn(window, 'print').mockImplementation(() => {})
     const workspace = useProxyWorkspace()

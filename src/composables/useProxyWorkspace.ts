@@ -23,12 +23,40 @@ const findPrintingWithFallback = (
   findPrintingForLanguage(printings, language) ??
   findPrintingForLanguage(printings, 'en')
 
+const findPrintingInEdition = (
+  printings: CardRowState['printings'],
+  selectedPrintingId: string,
+  language: string,
+) => {
+  const selected = printings.find(
+    (printing) => printing.id === selectedPrintingId,
+  )
+  if (!selected) {
+    return undefined
+  }
+
+  const sameEdition = printings.filter(
+    (printing) =>
+      printing.setCode === selected.setCode &&
+      printing.collectorNumber === selected.collectorNumber,
+  )
+  return (
+    findPrintingForLanguage(sameEdition, language) ??
+    findPrintingForLanguage(sameEdition, 'en') ??
+    sameEdition[0]
+  )
+}
+
 const applyPrintingsToRow = (
   row: CardRowState,
   printings: CardRowState['printings'],
   language: string,
+  preserveEdition = false,
 ) => {
-  const preferred = findPrintingWithFallback(printings, language)
+  const preferred =
+    (preserveEdition
+      ? findPrintingInEdition(printings, row.selectedPrintingId, language)
+      : undefined) ?? findPrintingWithFallback(printings, language)
   row.printings = printings
   row.name = findCanonicalPrinting(printings)?.name ?? preferred?.name ?? ''
   row.selectedPrintingId = preferred?.id ?? ''
@@ -216,6 +244,7 @@ export function useProxyWorkspace(
           row,
           printings,
           row.languageOverride || globalLanguage.value,
+          true,
         )
         if (!printings.length) {
           rejectRow(
@@ -340,7 +369,7 @@ export function useProxyWorkspace(
     globalLanguage.value = language
     rows.value.forEach((row) => {
       if (!row.languageOverride) {
-        applyPrintingsToRow(row, row.printings, language)
+        applyPrintingsToRow(row, row.printings, language, true)
       }
     })
   }
@@ -352,7 +381,7 @@ export function useProxyWorkspace(
     }
 
     row.languageOverride = language
-    applyPrintingsToRow(row, row.printings, language)
+    applyPrintingsToRow(row, row.printings, language, true)
   }
 
   function print() {
