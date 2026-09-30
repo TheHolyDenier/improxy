@@ -324,6 +324,10 @@ function updateInkSaving(event: { target: unknown }) {
     box-shadow: none;
   }
 
+  .print-preview__page > .print-preview__slot:nth-child(-n + 3) {
+    border-top: 0;
+  }
+
   .print-preview__page + .print-preview__page {
     break-before: page;
   }
