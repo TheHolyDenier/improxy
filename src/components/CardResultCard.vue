@@ -26,7 +26,7 @@ const selectedPrinting = computed(() =>
 const languageOptions = computed(() =>
   cardLanguageCodes.map((value) => ({
     value,
-    label: t(`cardLanguages.${value}`),
+    label: value.toUpperCase(),
   })),
 )
 const printingGroups = computed(() => {
@@ -104,23 +104,14 @@ function selectPrinting(editionKey: string) {
       :alt="selectedPrinting.name"
     />
     <div class="result-card__details">
-      <template v-if="selectedPrinting">
-        <p class="result-card__eyebrow">{{ t('result.selectedEdition') }}</p>
-        <h3 class="result-card__title">{{ selectedPrinting.setName }}</h3>
-        <p class="result-card__metadata">
-          {{ selectedPrinting.setCode.toUpperCase() }} ·
-          {{ selectedPrinting.collectorNumber }} ·
-          {{ t(`cardLanguages.${selectedPrinting.language}`) }}
-        </p>
-        <p v-if="isLanguageFallback()" class="result-card__fallback">
-          {{
-            t('result.languageFallback', {
-              requested: t(`cardLanguages.${language}`),
-              fallback: t(`cardLanguages.${selectedPrinting.language}`),
-            })
-          }}
-        </p>
-      </template>
+      <p v-if="isLanguageFallback()" class="result-card__fallback">
+        {{
+          t('result.languageFallback', {
+            requested: t(`cardLanguages.${language}`),
+            fallback: t(`cardLanguages.${selectedPrinting?.language}`),
+          })
+        }}
+      </p>
       <p v-if="status === 'error'" class="result-card__error">
         {{ errorMessage || t('result.empty') }}
       </p>
@@ -128,18 +119,22 @@ function selectPrinting(editionKey: string) {
         {{ t('result.empty') }}
       </p>
       <div v-if="printings.length" class="result-card__controls">
-        <BaseSelect
-          :model-value="selectedEditionKey"
-          :label="t('result.printing')"
-          :options="printingOptions"
-          @update:model-value="selectPrinting($event)"
-        />
-        <BaseSelect
-          :model-value="language"
-          :label="t('language.card')"
-          :options="languageOptions"
-          @update:model-value="emit('update:language', $event)"
-        />
+        <div class="result-card__printing-control">
+          <BaseSelect
+            :model-value="selectedEditionKey"
+            :label="t('result.printing')"
+            :options="printingOptions"
+            @update:model-value="selectPrinting($event)"
+          />
+        </div>
+        <div class="result-card__language-control">
+          <BaseSelect
+            :model-value="language"
+            :label="t('language.card')"
+            :options="languageOptions"
+            @update:model-value="emit('update:language', $event)"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -175,8 +170,14 @@ function selectPrinting(editionKey: string) {
 
 .result-card__controls {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) 86px;
+  align-items: end;
   gap: 8px;
   margin-top: 4px;
+}
+
+.result-card__language-control {
+  min-width: 0;
 }
 
 .result-card__skeleton {
@@ -206,24 +207,12 @@ function selectPrinting(editionKey: string) {
   to {
     background-position: -200% 0;
   }
-}
 
-.result-card__eyebrow {
-  margin: 0;
-  color: var(--pink-dark);
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0.14em;
-}
-
-.result-card__title {
-  margin: 0 0 4px;
-}
-
-.result-card__metadata {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.85rem;
+  @media (max-width: 520px) {
+    .result-card__controls {
+      grid-template-columns: 1fr;
+    }
+  }
 }
 
 .result-card__fallback {

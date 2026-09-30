@@ -94,7 +94,10 @@ describe('useProxyWorkspace', () => {
 
     expect(workspace.rows.value).toHaveLength(1)
     expect(workspace.rows.value[0]?.name).toBe('Lightning Bolt')
-    expect(workspace.parseErrors.value.join(' ')).toContain('Carta 2')
+    expect(workspace.parseErrors.value.join(' ')).toContain(
+      'No hemos encontrado ninguna carta llamada «Unknown Card».',
+    )
+    expect(workspace.parseErrors.value.join(' ')).not.toContain('Carta 2:')
   })
 
   it('removes cards when the search fails and reports the failure', async () => {
@@ -111,7 +114,7 @@ describe('useProxyWorkspace', () => {
     expect(workspace.rows.value).toHaveLength(0)
     expect(workspace.totalCopies.value).toBe(0)
     expect(workspace.parseErrors.value.join(' ')).toContain(
-      'No se pudo conectar con Scryfall.',
+      'No hemos podido buscar la carta «Lightning Bolt».',
     )
   })
 
@@ -147,6 +150,25 @@ describe('useProxyWorkspace', () => {
     expect(workspace.globalLanguage.value).toBe('es')
     expect(workspace.rows.value[0]?.selectedPrintingId).toBe('printing-1')
     expect(workspace.readyToPrint.value).toBe(true)
+  })
+
+  it('uses the canonical English card name for the visible title', async () => {
+    const spanishPrinting = {
+      ...printing,
+      id: 'printing-es',
+      language: 'es',
+      name: 'Contrahechizo',
+    }
+    const client = {
+      searchPrintings: vi.fn().mockResolvedValue([spanishPrinting, printing]),
+    }
+    const workspace = useProxyWorkspace(client)
+
+    workspace.rawList.value = 'counterspell'
+    await workspace.importList()
+
+    expect(workspace.rows.value[0]?.name).toBe('Lightning Bolt')
+    expect(workspace.rows.value[0]?.selectedPrintingId).toBe('printing-es')
   })
 
   it('duplicates a row as a fresh editable row', async () => {
@@ -210,7 +232,40 @@ describe('useProxyWorkspace', () => {
     await workspace.searchRow(row)
 
     expect(workspace.rows.value).toHaveLength(1)
+    expect(workspace.rows.value[0]?.name).toBe(printing.name)
+  })
+
+  it('ignores stale results when a card identity changes mid-search', async () => {
+    let resolveOld: ((value: (typeof printing)[]) => void) | undefined
+    const oldRequest = new Promise<(typeof printing)[]>((resolve) => {
+      resolveOld = resolve
+    })
+    const client = {
+      searchPrintings: vi
+        .fn()
+        .mockReturnValueOnce(oldRequest)
+        .mockResolvedValueOnce([
+          { ...printing, name: 'Counterspell', id: 'printing-new' },
+        ]),
+    }
+    const workspace = useProxyWorkspace(client)
+
+    workspace.rawList.value = 'Lightning Bolt'
+    const importPromise = workspace.importList()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    const row = workspace.rows.value[0]
+    if (!row || !resolveOld) {
+      throw new Error('Expected an in-flight card search')
+    }
+
+    workspace.updateRow(row.id, { name: 'Counterspell' })
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    resolveOld([printing])
+    await importPromise
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
     expect(workspace.rows.value[0]?.name).toBe('Counterspell')
+    expect(workspace.rows.value[0]?.selectedPrintingId).toBe('printing-new')
   })
 
   it('applies a global language without replacing an explicit override', async () => {

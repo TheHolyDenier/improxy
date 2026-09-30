@@ -13,6 +13,9 @@ const findPrintingForLanguage = (
   language: string,
 ) => printings.find((printing) => printing.language === language)
 
+const findCanonicalPrinting = (printings: CardRowState['printings']) =>
+  findPrintingForLanguage(printings, 'en') ?? printings[0]
+
 const findPrintingWithFallback = (
   printings: CardRowState['printings'],
   language: string,
@@ -63,13 +66,16 @@ export function useProxyWorkspace(
     row.errorMessage = message
     row.printings = []
     row.selectedPrintingId = ''
-    parseErrors.value = appendUniqueErrors(parseErrors.value, [
-      i18n.global.t('errors.parseLine', {
-        line: row.sourceLine,
-        message,
-      }),
-    ])
+    parseErrors.value = appendUniqueErrors(parseErrors.value, [message])
     rows.value = rows.value.filter((candidate) => candidate !== row)
+  }
+
+  function getSearchLabel(row: CardRowState) {
+    if (row.name.trim()) {
+      return row.name.trim()
+    }
+
+    return `e:${row.setCode.toUpperCase()} cn:${row.collectorNumber.trim()}`
   }
 
   const totalCopies = computed(() =>
@@ -93,6 +99,9 @@ export function useProxyWorkspace(
       rows.value.some(
         (row) => row.status !== 'error' && row.selectedPrintingId,
       ),
+  )
+  const visibleRows = computed(() =>
+    rows.value.filter((row) => row.status !== 'error'),
   )
 
   async function importList() {
@@ -124,7 +133,14 @@ export function useProxyWorkspace(
       return
     }
 
-    const requestKey = `${row.id}::${language}`
+    const searchLabel = getSearchLabel(row)
+    const requestKey = [
+      row.id,
+      language,
+      row.name.trim().toLowerCase(),
+      row.setCode.toLowerCase(),
+      row.collectorNumber.trim(),
+    ].join('::')
     const existingRequest = searchRequests.get(requestKey)
     if (existingRequest) {
       await existingRequest
@@ -151,25 +167,26 @@ export function useProxyWorkspace(
           printings,
           row.languageOverride || globalLanguage.value,
         )
-        if (!row.name.trim()) {
-          row.name = preferred?.name ?? printings[0]?.name ?? ''
-        }
+        row.name =
+          findCanonicalPrinting(printings)?.name ?? preferred?.name ?? row.name
         row.selectedPrintingId = preferred?.id ?? ''
         if (!printings.length) {
-          rejectRow(row, i18n.global.t('errors.notFound'))
+          rejectRow(
+            row,
+            i18n.global.t('errors.notFoundNamed', { name: searchLabel }),
+          )
         } else {
           row.status = 'resolved'
           row.errorMessage = ''
         }
-      } catch (error: unknown) {
+      } catch {
         if (searchVersions.get(row.id) !== version) {
           return
         }
-        const message =
-          error instanceof Error
-            ? error.message
-            : i18n.global.t('errors.searchFailed')
-        rejectRow(row, message || i18n.global.t('errors.searchFailed'))
+        rejectRow(
+          row,
+          i18n.global.t('errors.searchFailedNamed', { name: searchLabel }),
+        )
       } finally {
         searchRequests.delete(requestKey)
       }
@@ -211,6 +228,7 @@ export function useProxyWorkspace(
         patch.collectorNumber !== row.collectorNumber)
     Object.assign(row, patch)
     if (searchChanged) {
+      searchVersions.set(row.id, (searchVersions.get(row.id) ?? 0) + 1)
       row.status = 'idle'
       row.printings = []
       row.selectedPrintingId = ''
@@ -314,6 +332,7 @@ export function useProxyWorkspace(
   return {
     rawList,
     rows,
+    visibleRows,
     parseErrors,
     globalLanguage,
     inkSaving,

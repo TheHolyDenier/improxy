@@ -56,8 +56,8 @@ export const i18n = createI18n({
           'Revisa la hoja, mantén la escala al 100 % y dale al botón.',
       },
       language: {
-        global: 'Idioma por defecto',
-        card: 'Idioma de la carta',
+        global: 'Idioma',
+        card: 'Idioma',
       },
       row: {
         name: 'Nombre',
@@ -109,7 +109,9 @@ export const i18n = createI18n({
       errors: {
         missingName: 'Escribe un nombre antes de buscar.',
         notFound: 'No encontramos esa carta en Scryfall.',
+        notFoundNamed: 'No hemos encontrado ninguna carta llamada «{name}».',
         searchFailed: 'No se pudo buscar la carta.',
+        searchFailedNamed: 'No hemos podido buscar la carta «{name}».',
         inkSavingProcessing:
           'No se pudo preparar una imagen para ahorrar tinta.',
         parseLine: 'Carta {line}: {message}',

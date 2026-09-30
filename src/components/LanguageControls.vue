@@ -17,7 +17,7 @@ const { t } = useI18n()
 const languageOptions = computed(() =>
   cardLanguageCodes.map((value) => ({
     value,
-    label: t(`cardLanguages.${value}`),
+    label: value.toUpperCase(),
   })),
 )
 </script>
@@ -41,7 +41,7 @@ const languageOptions = computed(() =>
 .language-control {
   display: grid;
   gap: 4px;
-  min-width: 140px;
+  width: 86px;
 }
 
 .language-control__label {

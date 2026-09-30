@@ -36,7 +36,8 @@ watch(
       return
     }
 
-    visibleErrors.value = [...messages]
+    const latestMessage = [...new Set(messages)].at(-1)
+    visibleErrors.value = latestMessage ? [latestMessage] : []
     errorTimer = globalThis.setTimeout(dismissErrors, 60_000)
   },
   { immediate: true },

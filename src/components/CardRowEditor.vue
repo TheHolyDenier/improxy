@@ -1,13 +1,10 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Minus, Plus, Trash2 } from 'lucide-vue-next'
 
 import type { CardRowState } from '@/domain/card'
 import BaseButton from './ui/BaseButton.vue'
-
-defineProps<{
-  row: CardRowState
-}>()
 
 const emit = defineEmits<{
   update: [patch: Partial<CardRowState>]
@@ -15,6 +12,19 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const props = defineProps<{
+  row: CardRowState
+}>()
+
+const displayName = computed(() => {
+  const canonicalPrinting =
+    props.row.printings.find((printing) => printing.language === 'en') ??
+    props.row.printings.find(
+      (printing) => printing.id === props.row.selectedPrintingId,
+    )
+
+  return canonicalPrinting?.name ?? props.row.name
+})
 </script>
 
 <template>
@@ -26,8 +36,8 @@ const { t } = useI18n()
     <div class="row-editor__fields">
       <div class="row-editor__field">
         <span class="row-editor__label">{{ t('row.name') }}</span>
-        <strong class="row-editor__value" :title="row.name">
-          {{ row.name || '—' }}
+        <strong class="row-editor__value" :title="displayName">
+          {{ displayName || '—' }}
         </strong>
       </div>
       <div class="row-editor__field">

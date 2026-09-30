@@ -20,6 +20,7 @@ const {
   globalLanguage,
   inkSaving,
   rows,
+  visibleRows,
   totalCopies,
   unresolvedCount,
   pages,
@@ -91,11 +92,11 @@ async function addQuickCard() {
             {{ t('import.quickAdd') }}
           </BaseButton>
         </div>
-        <div v-if="!rows.length" class="app__empty-state">
+        <div v-if="!visibleRows.length" class="app__empty-state">
           {{ t('workspace.empty') }}
         </div>
         <div v-else class="app__rows-list">
-          <div v-for="row in rows" :key="row.id" class="app__row-group">
+          <div v-for="row in visibleRows" :key="row.id" class="app__row-group">
             <CardRowEditor
               :row="row"
               @update="updateRow(row.id, $event)"
@@ -238,7 +239,21 @@ async function addQuickCard() {
 
 .app__row-group {
   display: grid;
-  gap: 10px;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #f7eefa;
+}
+
+.app__row-group :deep(.row-editor) {
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+}
+
+.app__row-group :deep(.result-card) {
+  border-radius: 0;
 }
 
 .app__quick-add {

@@ -76,6 +76,25 @@ describe('workspace components', () => {
     vi.useRealTimers()
   })
 
+  it('shows only the latest import error in the floating notification', () => {
+    const wrapper = mount(CardListInput, {
+      props: {
+        modelValue: '',
+        errorMessages: [
+          'No hemos encontrado ninguna carta llamada «patata».',
+          'No hemos encontrado ninguna carta llamada «patata».',
+          'No hemos encontrado ninguna carta llamada «carta».',
+        ],
+      },
+      attachTo: document.body,
+    })
+
+    const alert = document.body.querySelector('[role="alert"]')
+    expect(alert?.textContent).toContain('«carta»')
+    expect(alert?.textContent).not.toContain('«patata»')
+    wrapper.unmount()
+  })
+
   it('renders a read-only row and emits removal', async () => {
     const wrapper = mount(CardRowEditor, { props: { row } })
 
@@ -88,6 +107,30 @@ describe('workspace components', () => {
     await wrapper.find('button.button--danger').trigger('click')
 
     expect(wrapper.emitted('remove')).toHaveLength(1)
+  })
+
+  it('displays the resolved Scryfall name instead of the entered name', () => {
+    const wrapper = mount(CardRowEditor, {
+      props: {
+        row: {
+          ...row,
+          name: 'contrahechizo',
+          printings: [
+            { ...printing, name: 'Counterspell' },
+            {
+              ...printing,
+              id: 'printing-es',
+              language: 'es',
+              name: 'Contrahechizo',
+            },
+          ],
+          selectedPrintingId: 'printing-es',
+        },
+      },
+    })
+
+    expect(wrapper.text()).toContain('Counterspell')
+    expect(wrapper.text()).not.toContain('contrahechizo')
   })
 
   it('renders quantity controls without search or duplicate actions', async () => {
@@ -178,7 +221,8 @@ describe('workspace components', () => {
   it('renders global language controls', () => {
     const wrapper = mount(LanguageControls, { props: { modelValue: 'en' } })
 
-    expect(wrapper.find('label').text()).toContain('Idioma por defecto')
+    expect(wrapper.find('label').text()).toBe('Idioma')
+    expect(wrapper.find('option').text()).toBe('EN')
   })
 
   it('emits a global language change', async () => {
