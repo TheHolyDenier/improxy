@@ -41,12 +41,10 @@ const { t } = useI18n()
   <main class="app">
     <header class="hero">
       <div class="hero__copy">
-        <p class="hero__eyebrow">{{ t('hero.kicker') }}</p>
         <h1 class="hero__title">
           {{ t('hero.title') }}
           <span class="hero__title-accent">{{ t('hero.titleAccent') }}</span>
         </h1>
-        <p class="hero__lead">{{ t('hero.lead') }}</p>
       </div>
       <div class="hero__sticker">
         {{ t('hero.stickerLine1') }}<br />{{ t('hero.stickerLine2') }}
@@ -113,7 +111,7 @@ const { t } = useI18n()
       :ink-saving="inkSaving"
       @update:ink-saving="setInkSaving"
     />
-    <ScrollToTopButton />
+    <ScrollToTopButton :enabled="rows.length > 3" />
   </main>
 </template>
 
@@ -149,13 +147,6 @@ const { t } = useI18n()
 
 .hero__copy {
   max-width: 760px;
-}
-
-.hero__lead {
-  max-width: 640px;
-  margin: 0;
-  color: var(--muted);
-  font-size: 1.1rem;
 }
 
 .hero__sticker {

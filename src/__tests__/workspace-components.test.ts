@@ -143,7 +143,7 @@ describe('workspace components', () => {
   it('renders global language controls', () => {
     const wrapper = mount(LanguageControls, { props: { modelValue: 'en' } })
 
-    expect(wrapper.find('label').text()).toContain('Idioma global')
+    expect(wrapper.find('label').text()).toContain('Idioma por defecto')
   })
 
   it('emits a global language change', async () => {
@@ -159,7 +159,7 @@ describe('workspace components', () => {
       props: { totalCopies: 1, unresolvedCount: 0, ready: true },
     })
 
-    expect(wrapper.text()).toContain('1 proxies preparados')
+    expect(wrapper.text()).toContain('1 proxy listo')
     await wrapper.find('button').trigger('click')
     expect(wrapper.emitted('print')).toHaveLength(1)
   })
@@ -181,9 +181,7 @@ describe('workspace components', () => {
     })
 
     const checkbox = wrapper.find('input[type="checkbox"]')
-    expect(checkbox.attributes('aria-label')).toBe(
-      'Filtro texto / ahorrar tinta',
-    )
+    expect(checkbox.attributes('aria-label')).toBe('Ahorro de tinta')
     await checkbox.setValue(true)
 
     expect(wrapper.emitted('update:inkSaving')?.[0]).toEqual([true])
@@ -230,16 +228,30 @@ describe('workspace components', () => {
       value: 0,
     })
     const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
-    const wrapper = mount(ScrollToTopButton)
+    const wrapper = mount(ScrollToTopButton, { props: { enabled: true } })
     Object.defineProperty(window, 'scrollY', { configurable: true, value: 500 })
     window.dispatchEvent(new Event('scroll'))
 
     await wrapper.vm.$nextTick()
-    expect(wrapper.text()).toContain('Volver arriba')
+    expect(wrapper.find('button').attributes('aria-label')).toBe(
+      'Subir al inicio',
+    )
     await wrapper.find('button').trigger('click')
 
     expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
     scrollTo.mockRestore()
+  })
+
+  it('hides the back-to-top button until enough rows exist', async () => {
+    Object.defineProperty(window, 'scrollY', {
+      configurable: true,
+      value: 500,
+    })
+    const wrapper = mount(ScrollToTopButton, { props: { enabled: false } })
+
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('button').exists()).toBe(false)
   })
 
   it('keeps floating navigation available through the proxy preview', async () => {
@@ -248,7 +260,7 @@ describe('workspace components', () => {
       value: 500,
     })
 
-    const wrapper = mount(ScrollToTopButton)
+    const wrapper = mount(ScrollToTopButton, { props: { enabled: true } })
 
     await wrapper.vm.$nextTick()
     expect(wrapper.find('button').exists()).toBe(true)

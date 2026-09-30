@@ -92,10 +92,12 @@ const { t } = useI18n()
 }
 
 .import-card__example {
+  display: inline-block;
   padding: 2px 6px;
   border-radius: 6px;
   color: var(--pink-dark);
   background: #ffe3ed;
+  white-space: nowrap;
 }
 
 .import-card__actions {

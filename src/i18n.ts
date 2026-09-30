@@ -18,10 +18,8 @@ export const i18n = createI18n({
         fr: 'Francés',
       },
       hero: {
-        kicker: 'MTG PROXY PRINTER / 01',
-        title: 'Cartas listas.',
-        titleAccent: 'Caos controlado.',
-        lead: 'Convierte una lista en proxies imprimibles a tamaño real. Sin middleware raro, sin rehacerlo todo por una carta.',
+        title: 'Improxy.',
+        titleAccent: 'Caos (des)controlado.',
         stickerLine1: 'MAKE IT',
         stickerLine2: 'PRINTABLE',
       },
@@ -29,8 +27,7 @@ export const i18n = createI18n({
         kicker: '01 / CARGA RÁPIDA',
         title: 'Pega tu lista',
         badge: 'NOMBRE = 1',
-        description:
-          'Una carta por línea. El nombre es suficiente: la cantidad empieza en 1. También puedes usar',
+        description: 'Una carta por línea. El nombre basta. Ejemplo:',
         placeholder:
           'Lightning Bolt\n2 Counterspell (STA)\nSheoldred, the Apocalypse',
         example: '2 Lightning Bolt (STA)',
@@ -39,12 +36,12 @@ export const i18n = createI18n({
       },
       workspace: {
         kicker: '02 / AJUSTA SIN MIEDO',
-        title: 'Tu lista, en filas',
+        title: 'Ajusta tu lista.',
         empty: 'Importa una lista o añade una fila para empezar.',
         add: '+ Añadir carta',
       },
       language: {
-        global: 'Idioma global',
+        global: 'Idioma por defecto',
         card: 'Idioma de la carta',
       },
       row: {
@@ -70,24 +67,27 @@ export const i18n = createI18n({
           'No hay una impresión en {requested}. Se muestra la versión en {fallback}.',
       },
       readiness: {
-        kicker: '03 / LISTO PARA SALIR',
-        prepared: '{count} proxies preparados',
-        unresolved: 'Faltan {count} fila(s) por resolver antes de imprimir.',
-        complete: 'Todo resuelto. Revisa el tamaño y dispara la impresión.',
-        print: 'Imprimir hojas',
+        kicker: '03 / LISTO PARA JUGAR',
+        prepared: '{count} proxy listo | {count} proxies listos',
+        empty: 'Añade las cartas que quieras imprimir.',
+        unresolved:
+          'Resuelve {count} fila pendiente antes de imprimir. | Resuelve {count} filas pendientes antes de imprimir.',
+        complete:
+          'Revisa la edición y el idioma de cada carta. Después, imprime al 100 %.',
+        print: 'Imprimir proxies',
       },
       preview: {
-        kicker: '04 / VISTA DE IMPRESIÓN',
+        kicker: '04 / PREPARA LA IMPRESIÓN',
         title: 'Tu hoja, a tamaño real',
         size: '63 × 88 MM',
         note: 'Imprime al 100 % y desactiva cualquier ajuste automático de escala.',
-        empty: 'Resuelve alguna carta para ver la cuadrícula 3x3.',
-        inkSaving: 'Filtro texto / ahorrar tinta',
+        empty: 'Añade al menos una carta para ver la cuadrícula 3x3.',
+        inkSaving: 'Ahorro de tinta',
         inkSavingHelp:
-          'Aclara las zonas oscuras y elimina el color sin destruir el texto al imprimir.',
+          'Aclara las imágenes y las pasa a escala de grises para reducir el consumo de tinta.',
       },
       navigation: {
-        backToTop: 'Volver arriba',
+        backToTop: 'Subir al inicio',
       },
       errors: {
         missingName: 'Escribe un nombre antes de buscar.',
