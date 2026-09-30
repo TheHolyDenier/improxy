@@ -407,25 +407,6 @@ export function useProxyWorkspace(
     rows.value = rows.value.filter((row) => row.id !== rowId)
   }
 
-  function duplicateRow(rowId: string) {
-    const source = rows.value.find((row) => row.id === rowId)
-    if (!source) {
-      return
-    }
-
-    rows.value.push({
-      ...source,
-      id: crypto.randomUUID(),
-      sourceLine: 0,
-      name: '',
-      queryName: source.queryName,
-      status: 'idle',
-      errorMessage: '',
-      printings: [],
-      selectedPrintingId: '',
-    })
-  }
-
   function setGlobalLanguage(language: string) {
     globalLanguage.value = language
     rows.value.forEach((row) => {
@@ -470,7 +451,6 @@ export function useProxyWorkspace(
     updateRow,
     addCardFromSyntax,
     removeRow,
-    duplicateRow,
     setGlobalLanguage,
     setRowLanguage,
     setInkSaving,

@@ -42,6 +42,14 @@ const canGoDown = computed(
 
 const scrollToSection = (direction: 'up' | 'down') => {
   const elements = sectionElements()
+  const currentElement = elements[currentSection.value]
+  const isInsideCurrentSection =
+    currentElement && globalThis.scrollY > currentElement.offsetTop + 120
+  if (direction === 'up' && isInsideCurrentSection) {
+    currentElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    return
+  }
+
   const targetIndex = currentSection.value + (direction === 'down' ? 1 : -1)
   const target = elements[targetIndex]
   if (!target) {

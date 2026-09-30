@@ -106,7 +106,7 @@ describe('workspace components', () => {
     wrapper.unmount()
   })
 
-  it('renders a read-only row and emits removal and duplication', async () => {
+  it('renders a read-only row and emits removal', async () => {
     const wrapper = mount(CardRowEditor, { props: { row } })
 
     expect(wrapper.text()).toContain('Nombre')
@@ -118,10 +118,6 @@ describe('workspace components', () => {
     await wrapper.find('button.button--danger').trigger('click')
 
     expect(wrapper.emitted('remove')).toHaveLength(1)
-
-    await wrapper.find('button[aria-label="Duplicar carta"]').trigger('click')
-
-    expect(wrapper.emitted('duplicate')).toHaveLength(1)
   })
 
   it('displays the resolved Scryfall name instead of the entered name', () => {
@@ -167,11 +163,11 @@ describe('workspace components', () => {
     expect(wrapper.text()).toContain('—')
   })
 
-  it('renders quantity controls without a search action', async () => {
+  it('renders quantity controls without a search or duplicate action', async () => {
     const wrapper = mount(CardRowEditor, { props: { row } })
     expect(wrapper.find('button[aria-label="Buscar"]').exists()).toBe(false)
     expect(wrapper.find('button[aria-label="Duplicar carta"]').exists()).toBe(
-      true,
+      false,
     )
 
     const increase = wrapper.find('button[aria-label="Aumentar cantidad"]')
@@ -439,6 +435,50 @@ describe('workspace components', () => {
     expect(
       wrapper.find('button[aria-label="Sección siguiente"]').exists(),
     ).toBe(true)
+
+    wrapper.unmount()
+    document.body.replaceChildren()
+  })
+
+  it('returns to the current section header before going to the previous one', async () => {
+    Object.defineProperty(window, 'scrollY', {
+      configurable: true,
+      value: 1500,
+    })
+    const importSection = document.createElement('section')
+    const workspaceSection = document.createElement('section')
+    const previewSection = document.createElement('section')
+    importSection.id = 'import'
+    workspaceSection.id = 'workspace'
+    previewSection.id = 'preview'
+    Object.defineProperty(importSection, 'offsetTop', { value: 0 })
+    Object.defineProperty(workspaceSection, 'offsetTop', { value: 500 })
+    Object.defineProperty(previewSection, 'offsetTop', { value: 1000 })
+    document.body.append(importSection, workspaceSection, previewSection)
+
+    const scrollIntoView = vi.fn()
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView,
+    })
+    const wrapper = mount(ScrollToTopButton, {
+      props: {
+        enabled: true,
+        sectionIds: ['import', 'workspace', 'preview'],
+      },
+    })
+
+    await wrapper.vm.$nextTick()
+    await wrapper.find('button[aria-label="Sección anterior"]').trigger('click')
+
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      behavior: 'smooth',
+      block: 'start',
+    })
+    expect(scrollIntoView).toHaveBeenCalledWith(
+      expect.objectContaining({ behavior: 'smooth' }),
+    )
+    expect(scrollIntoView.mock.instances[0]).toBe(previewSection)
 
     wrapper.unmount()
     document.body.replaceChildren()

@@ -11,7 +11,7 @@ describe('App', () => {
     expect(wrapper.text()).toContain('Caos (des)controlado.')
     expect(wrapper.text()).toContain('Pon las cartas sobre la mesa')
     expect(wrapper.text()).toContain('Añade tus cartas')
-    expect(wrapper.text()).toContain('Elige idioma y edición')
+    expect(wrapper.text()).toContain('Elige edición')
     expect(wrapper.text()).toContain('Calienta rodillos')
     expect(wrapper.text()).toContain('01')
     expect(wrapper.text()).toContain('03')

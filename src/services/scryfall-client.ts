@@ -53,14 +53,18 @@ export class ScryfallClient {
     language = 'en',
     collectorNumber = '',
   ): Promise<ScryfallPrinting[]> {
-    void language
-    const requestKey = `${name.trim().toLowerCase()}::${setCode.toLowerCase()}::${collectorNumber.trim()}`
+    const requestKey = `${name.trim().toLowerCase()}::${setCode.toLowerCase()}::${language.toLowerCase()}::${collectorNumber.trim()}`
     const pendingRequest = this.pendingRequests.get(requestKey)
     if (pendingRequest) {
       return pendingRequest
     }
 
-    const request = this.fetchPrintings(name, setCode, collectorNumber)
+    const request = this.fetchPrintings(
+      name,
+      setCode,
+      collectorNumber,
+      language,
+    )
     this.pendingRequests.set(requestKey, request)
     try {
       const printings = await request
@@ -75,6 +79,7 @@ export class ScryfallClient {
           canonicalName,
           setCode,
           collectorNumber,
+          language,
         )
       }
 
@@ -90,6 +95,7 @@ export class ScryfallClient {
     name: string,
     setCode: string,
     collectorNumber: string,
+    language: string,
   ): Promise<ScryfallPrinting[]> {
     const selectors = [
       setCode ? `set:${setCode.trim().toLowerCase()}` : '',
@@ -102,7 +108,14 @@ export class ScryfallClient {
       .replaceAll('\\', '\\\\')
       .replaceAll('"', '\\"')
     const nameQuery = escapedName ? `!"${escapedName}"` : ''
-    const query = [nameQuery, selectors].filter(Boolean).join(' ')
+    const normalizedLanguage = language.trim().toLowerCase()
+    const languageSelector =
+      normalizedLanguage === 'en'
+        ? 'lang:en'
+        : `(lang:${normalizedLanguage} or lang:en)`
+    const query = [nameQuery, selectors, languageSelector]
+      .filter(Boolean)
+      .join(' ')
     const url = new URL('/cards/search', this.baseUrl)
     url.searchParams.set('q', query)
     url.searchParams.set('unique', 'prints')

@@ -32,22 +32,30 @@ describe('ScryfallClient', () => {
     })
   })
 
-  it('does not use language to identify a card in Scryfall', async () => {
+  it('loads the requested language and English fallback', async () => {
     const fetcher = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ data: [card] }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }),
+      new Response(
+        JSON.stringify({
+          data: [{ ...card, id: 'card-es', lang: 'es' }, card],
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
     )
 
-    await new ScryfallClient(fetcher).searchPrintings(
+    const result = await new ScryfallClient(fetcher).searchPrintings(
       'Lightning Bolt',
       '',
       'es',
     )
 
-    expect(String(fetcher.mock.calls[0]?.[0])).not.toContain('lang%3Aes')
-    expect(String(fetcher.mock.calls[0]?.[0])).not.toContain('lang%3Aen')
+    expect(fetcher).toHaveBeenCalledOnce()
+    expect(String(fetcher.mock.calls[0]?.[0])).toContain(
+      '%28lang%3Aes+or+lang%3Aen%29',
+    )
+    expect(result.map((printing) => printing.language)).toEqual(['es', 'en'])
   })
 
   it('retries with Scryfall canonical name after a localized match', async () => {

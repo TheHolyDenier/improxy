@@ -32,7 +32,6 @@ const {
   setGlobalLanguage,
   setRowLanguage,
   setInkSaving,
-  duplicateRow,
   print,
 } = useProxyWorkspace()
 
@@ -66,6 +65,12 @@ async function addQuickCard() {
     </header>
 
     <div id="import-section">
+      <div class="app__import-language">
+        <LanguageControls
+          :model-value="globalLanguage"
+          @update:model-value="setGlobalLanguage"
+        />
+      </div>
       <CardListInput
         v-model="rawList"
         :error-messages="parseErrors"
@@ -81,10 +86,6 @@ async function addQuickCard() {
             <p class="app__eyebrow">{{ t('workspace.kicker') }}</p>
             <h2 class="app__section-title">{{ t('workspace.title') }}</h2>
           </div>
-          <LanguageControls
-            :model-value="globalLanguage"
-            @update:model-value="setGlobalLanguage"
-          />
         </div>
         <div class="app__quick-add">
           <BaseInput
@@ -112,7 +113,6 @@ async function addQuickCard() {
               :language="row.languageOverride || globalLanguage"
               @update="updateRow(row.id, $event)"
               @remove="removeRow(row.id)"
-              @duplicate="duplicateRow(row.id)"
               @language="setRowLanguage(row.id, $event)"
             />
           </div>
@@ -199,6 +199,12 @@ async function addQuickCard() {
   grid-template-columns: minmax(0, 1.6fr) minmax(300px, 0.8fr);
   gap: 18px;
   margin-top: 18px;
+}
+
+.app__import-language {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
 }
 
 .app__section-subtitle {

@@ -295,30 +295,6 @@ describe('useProxyWorkspace', () => {
     expect(workspace.rows.value[0]?.selectedPrintingId).toBe('printing-es')
   })
 
-  it('duplicates a row as a fresh editable row', async () => {
-    const client = {
-      searchPrintings: vi.fn().mockResolvedValue([printing]),
-    }
-    const workspace = useProxyWorkspace(client)
-
-    workspace.rawList.value = 'Lightning Bolt'
-    await workspace.importList()
-    const original = workspace.rows.value[0]
-
-    workspace.duplicateRow(original?.id ?? '')
-
-    expect(workspace.rows.value).toHaveLength(2)
-    expect(workspace.rows.value[1]).toMatchObject({
-      name: '',
-      queryName: 'Lightning Bolt',
-      quantity: 1,
-      status: 'idle',
-      selectedPrintingId: '',
-      collectorNumber: '',
-    })
-    expect(workspace.rows.value[1]?.id).not.toBe(original?.id)
-  })
-
   it('updates one row without resetting another row', async () => {
     const client = {
       searchPrintings: vi.fn().mockResolvedValue([printing]),

@@ -2,7 +2,15 @@ import { createI18n } from 'vue-i18n'
 
 export const defaultCardLanguage = 'es'
 
-export const cardLanguageCodes = ['en', 'es', 'ja', 'de', 'fr'] as const
+export const cardLanguageCodes = [
+  'en',
+  'es',
+  'ja',
+  'de',
+  'fr',
+  'it',
+  'pt',
+] as const
 export const cardLanguageOptions = cardLanguageCodes.map((value) => ({
   value,
   label: value.toUpperCase(),
@@ -20,6 +28,8 @@ export const i18n = createI18n({
         ja: 'japonés',
         de: 'alemán',
         fr: 'francés',
+        it: 'italiano',
+        pt: 'portugués',
       },
       hero: {
         title: 'Improxy.',
@@ -44,7 +54,7 @@ export const i18n = createI18n({
         quickAddPlaceholder: 'Lightning Bolt e:INR cn:13',
       },
       workspace: {
-        kicker: '02 / Elige idioma y edición',
+        kicker: '02 / Elige edición',
         title: 'Escoge tu veneno',
         subtitle: 'Edita tus cartas',
         empty: 'Añade una lista o una carta para empezar.',
@@ -77,7 +87,6 @@ export const i18n = createI18n({
         decreaseQuantity: 'Reducir cantidad',
         increaseQuantity: 'Aumentar cantidad',
         remove: 'Eliminar carta',
-        duplicate: 'Duplicar carta',
       },
       result: {
         selectedEdition: 'EDICIÓN SELECCIONADA',
