@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const props = withDefaults(
@@ -35,6 +35,11 @@ const updateSection = () => {
   )
 }
 
+const canGoUp = computed(() => props.enabled && currentSection.value > 0)
+const canGoDown = computed(
+  () => props.enabled && currentSection.value < props.sectionIds.length - 1,
+)
+
 const scrollToSection = (direction: 'up' | 'down') => {
   const elements = sectionElements()
   const targetIndex = currentSection.value + (direction === 'down' ? 1 : -1)
@@ -63,9 +68,12 @@ onUnmounted(() => {
 <template>
   <div class="scroll-top-slot">
     <button
-      v-if="props.enabled && currentSection > 0"
+      v-if="props.enabled"
       class="scroll-top-button"
+      :class="{ 'scroll-top-button--hidden': !canGoUp }"
       type="button"
+      :disabled="!canGoUp"
+      :aria-hidden="!canGoUp"
       :aria-label="t('navigation.previousSection')"
       :title="t('navigation.previousSection')"
       @click="scrollToSection('up')"
@@ -73,9 +81,12 @@ onUnmounted(() => {
       ↑
     </button>
     <button
-      v-if="props.enabled && currentSection < props.sectionIds.length - 1"
+      v-if="props.enabled"
       class="scroll-top-button"
+      :class="{ 'scroll-top-button--hidden': !canGoDown }"
       type="button"
+      :disabled="!canGoDown"
+      :aria-hidden="!canGoDown"
       :aria-label="t('navigation.nextSection')"
       :title="t('navigation.nextSection')"
       @click="scrollToSection('down')"
@@ -112,6 +123,11 @@ onUnmounted(() => {
 
 .scroll-top-button:hover {
   background: var(--pink);
+}
+
+.scroll-top-button--hidden {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 @media print {

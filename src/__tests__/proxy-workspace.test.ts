@@ -103,6 +103,30 @@ describe('useProxyWorkspace', () => {
     expect(maxActiveRequests).toBe(1)
   })
 
+  it('publishes each resolved row before the full list finishes', async () => {
+    let resolveSecond: ((value: (typeof printing)[]) => void) | undefined
+    const secondSearch = new Promise<(typeof printing)[]>((resolve) => {
+      resolveSecond = resolve
+    })
+    const client = {
+      searchPrintings: vi
+        .fn()
+        .mockResolvedValueOnce([printing])
+        .mockReturnValueOnce(secondSearch),
+    }
+    const workspace = useProxyWorkspace(client)
+
+    workspace.rawList.value = 'Lightning Bolt\nCounterspell'
+    const importPromise = workspace.importList()
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    expect(workspace.rows.value).toHaveLength(1)
+    resolveSecond?.([{ ...printing, name: 'Counterspell' }])
+    await importPromise
+
+    expect(workspace.rows.value).toHaveLength(2)
+  })
+
   it('rejects multiline quick-add input without changing the list', async () => {
     const client = {
       searchPrintings: vi.fn().mockResolvedValue([printing]),

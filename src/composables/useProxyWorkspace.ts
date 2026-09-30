@@ -183,15 +183,15 @@ export function useProxyWorkspace(
         }),
       )
       failedEntryCount.value = result.errors.length
-      const resolvedRows = await Promise.all(
-        result.entries.map((entry) => resolveEntry(entry)),
-      )
-      failedEntryCount.value += resolvedRows.filter(
-        (row): row is null => row === null,
-      ).length
-      rows.value = resolvedRows.filter(
-        (row): row is CardRowState => row !== null,
-      )
+      rows.value = []
+      for (const entry of result.entries) {
+        const row = await resolveEntry(entry)
+        if (row) {
+          rows.value = [...rows.value, row]
+        } else {
+          failedEntryCount.value += 1
+        }
+      }
     } finally {
       isLoading.value = false
     }

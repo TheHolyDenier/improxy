@@ -400,7 +400,6 @@ describe('workspace components', () => {
       behavior: 'smooth',
       block: 'start',
     })
-    scrollIntoView.mockRestore()
     document.body.replaceChildren()
   })
 
@@ -434,9 +433,9 @@ describe('workspace components', () => {
     })
 
     await wrapper.vm.$nextTick()
-    expect(wrapper.find('button[aria-label="Sección anterior"]').exists()).toBe(
-      false,
-    )
+    expect(
+      wrapper.find('button[aria-label="Sección anterior"]').classes(),
+    ).toContain('scroll-top-button--hidden')
     expect(
       wrapper.find('button[aria-label="Sección siguiente"]').exists(),
     ).toBe(true)
