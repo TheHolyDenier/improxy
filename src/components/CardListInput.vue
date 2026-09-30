@@ -37,8 +37,7 @@ watch(
       return
     }
 
-    const latestMessage = [...new Set(messages)].at(-1)
-    visibleErrors.value = latestMessage ? [latestMessage] : []
+    visibleErrors.value = [...new Set(messages)]
     errorTimer = globalThis.setTimeout(dismissErrors, 60_000)
   },
   { immediate: true },
@@ -172,6 +171,8 @@ onBeforeUnmount(dismissErrors)
 .import-card__errors {
   display: grid;
   gap: 3px;
+  max-height: min(240px, 40vh);
+  overflow-y: auto;
 }
 
 .import-card__toast {

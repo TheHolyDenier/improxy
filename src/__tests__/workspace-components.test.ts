@@ -87,7 +87,7 @@ describe('workspace components', () => {
     vi.useRealTimers()
   })
 
-  it('shows only the latest import error in the floating notification', () => {
+  it('shows all distinct import errors in the floating notification', () => {
     const wrapper = mount(CardListInput, {
       props: {
         modelValue: '',
@@ -102,7 +102,7 @@ describe('workspace components', () => {
 
     const alert = document.body.querySelector('[role="alert"]')
     expect(alert?.textContent).toContain('«carta»')
-    expect(alert?.textContent).not.toContain('«patata»')
+    expect(alert?.textContent).toContain('«patata»')
     wrapper.unmount()
   })
 

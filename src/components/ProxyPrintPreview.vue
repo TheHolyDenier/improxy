@@ -23,7 +23,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const processedImages = ref(new Map<string, string>())
 const failedImages = ref(new Set<string>())
-const processingImages = new Set<string>()
+const processingImages = ref(new Set<string>())
 const imageUris = computed(() =>
   Array.from(
     new Set(
@@ -50,12 +50,12 @@ async function processImage(imageUri: string) {
   if (
     processedImages.value.has(imageUri) ||
     failedImages.value.has(imageUri) ||
-    processingImages.has(imageUri)
+    processingImages.value.has(imageUri)
   ) {
     return
   }
 
-  processingImages.add(imageUri)
+  processingImages.value = new Set(processingImages.value).add(imageUri)
   try {
     const processedUri = await createInkSavingImageUri(imageUri)
     processedImages.value = new Map(processedImages.value).set(
@@ -66,9 +66,14 @@ async function processImage(imageUri: string) {
     failedImages.value = new Set(failedImages.value).add(imageUri)
     globalThis.console.error(t('errors.inkSavingProcessing'), error)
   } finally {
-    processingImages.delete(imageUri)
+    const nextProcessingImages = new Set(processingImages.value)
+    nextProcessingImages.delete(imageUri)
+    processingImages.value = nextProcessingImages
   }
 }
+
+const processingCount = computed(() => processingImages.value.size)
+const failedCount = computed(() => failedImages.value.size)
 
 watch(
   [() => props.inkSaving, imageUris],
@@ -116,6 +121,15 @@ function updateInkSaving(event: globalThis.Event) {
         </span>
       </label>
     </div>
+    <p v-if="processingCount" class="print-preview__status" role="status">
+      {{ t('preview.processing', { count: processingCount }) }}
+    </p>
+    <p
+      v-if="failedCount"
+      class="print-preview__status print-preview__status--error"
+    >
+      {{ t('preview.processingFailed', { count: failedCount }) }}
+    </p>
     <div
       class="print-preview__pages"
       :class="{ 'print-preview__pages--ink-saving': props.inkSaving }"
@@ -243,6 +257,16 @@ function updateInkSaving(event: globalThis.Event) {
   display: grid;
   gap: 26px;
   overflow-x: auto;
+}
+
+.print-preview__status {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.print-preview__status--error {
+  color: #a42a43;
 }
 
 .print-preview__page {
