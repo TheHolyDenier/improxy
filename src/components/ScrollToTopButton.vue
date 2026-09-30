@@ -24,13 +24,15 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <button
-    v-if="visible"
-    class="scroll-top-button"
-    type="button"
-    :aria-label="t('navigation.backToTop')"
-    @click="scrollToTop"
-  >
-    ↑ {{ t('navigation.backToTop') }}
-  </button>
+  <div class="scroll-top-slot">
+    <button
+      v-if="visible"
+      class="scroll-top-button"
+      type="button"
+      :aria-label="t('navigation.backToTop')"
+      @click="scrollToTop"
+    >
+      ↑ {{ t('navigation.backToTop') }}
+    </button>
+  </div>
 </template>

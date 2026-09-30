@@ -392,11 +392,46 @@ code {
   margin-top: 18px;
 }
 
+.print-controls {
+  display: grid;
+  gap: 14px;
+}
+
+.ink-saving-control {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: min(100%, 620px);
+  padding: 12px 14px 14px;
+  cursor: pointer;
+}
+
+.ink-saving-control input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--pink);
+}
+
+.ink-saving-control span {
+  display: grid;
+  gap: 2px;
+}
+
+.ink-saving-control small {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.scroll-top-slot {
+  display: flex;
+  min-height: 46px;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
 .scroll-top-button {
-  position: fixed;
-  right: 24px;
-  bottom: 24px;
-  z-index: 10;
+  align-self: flex-end;
   padding: 11px 16px;
   border: 1px solid var(--ink);
   border-radius: 999px;
@@ -431,6 +466,7 @@ code {
 }
 
 .print-slot {
+  position: relative;
   width: 63mm;
   height: 88mm;
   overflow: hidden;
@@ -444,6 +480,10 @@ code {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+.print-pages--ink-saving .print-slot__image--fallback {
+  filter: grayscale(1) contrast(1.35) brightness(1.25);
 }
 
 .print-slot--empty {
@@ -482,11 +522,6 @@ code {
   .app-shell {
     width: min(100% - 20px, 1180px);
     padding-top: 24px;
-  }
-
-  .scroll-top-button {
-    right: 14px;
-    bottom: 14px;
   }
 
   .hero h1 {
@@ -535,7 +570,8 @@ code {
   .import-card,
   .workspace-grid,
   .preview-card > .section-heading,
-  .preview-card > .print-note {
+  .preview-card > .print-controls,
+  .scroll-top-slot {
     display: none;
   }
 

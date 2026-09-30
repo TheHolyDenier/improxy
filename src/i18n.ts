@@ -51,10 +51,13 @@ export const i18n = createI18n({
         quantity: 'Cantidad',
         set: 'Set opcional',
         loading: 'Buscando…',
-        editions: '{count} ediciones',
+        editions: '{count} edición | {count} ediciones',
         error: 'Error al buscar',
         pending: 'Pendiente',
         cardNameLabel: 'Nombre de la carta',
+        duplicate: 'Duplicar',
+        search: 'Buscar',
+        remove: 'Quitar',
       },
       result: {
         selectedEdition: 'EDICIÓN SELECCIONADA',
@@ -78,6 +81,9 @@ export const i18n = createI18n({
         size: '63 × 88 MM',
         note: 'Imprime al 100 % y desactiva cualquier ajuste automático de escala.',
         empty: 'Resuelve alguna carta para ver la cuadrícula 3x3.',
+        inkSaving: 'Filtro texto / ahorrar tinta',
+        inkSavingHelp:
+          'Aclara las zonas oscuras y elimina el color sin destruir el texto al imprimir.',
       },
       navigation: {
         backToTop: 'Volver arriba',

@@ -67,21 +67,30 @@ const editionCount = computed(
         {{ t('row.loading') }}
       </span>
       <span v-else-if="row.status === 'resolved'" class="status status--ok">
-        {{ t('row.editions', { count: editionCount }) }}
+        {{
+          t('row.editions', {
+            count: editionCount,
+            plural: editionCount,
+          })
+        }}
       </span>
       <span v-else-if="row.status === 'error'" class="status status--error">
         <span :title="row.errorMessage">{{ t('row.error') }}</span>
       </span>
       <span v-else class="status">{{ t('row.pending') }}</span>
       <div class="row-actions">
-        <BaseButton variant="ghost" @click="emit('duplicate')">
-          Duplicar
+        <BaseButton
+          type="button"
+          variant="ghost"
+          @click.stop="emit('duplicate')"
+        >
+          {{ t('row.duplicate') }}
         </BaseButton>
-        <BaseButton variant="ghost" @click="emit('search')">
-          Buscar
+        <BaseButton type="button" variant="ghost" @click.stop="emit('search')">
+          {{ t('row.search') }}
         </BaseButton>
-        <BaseButton variant="danger" @click="emit('remove')">
-          Quitar
+        <BaseButton type="button" variant="danger" @click.stop="emit('remove')">
+          {{ t('row.remove') }}
         </BaseButton>
       </div>
     </div>

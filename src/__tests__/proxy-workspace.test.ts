@@ -114,6 +114,27 @@ describe('useProxyWorkspace', () => {
     expect(second?.status).toBe('resolved')
   })
 
+  it('searches a renamed row without adding another row', async () => {
+    const client = {
+      searchPrintings: vi.fn().mockResolvedValue([printing]),
+    }
+    const workspace = useProxyWorkspace(client)
+
+    workspace.rawList.value = 'Lightning Bolt'
+    workspace.importList()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    const row = workspace.rows.value[0]
+    if (!row) {
+      throw new Error('Expected an imported row')
+    }
+
+    workspace.updateRow(row.id, { name: 'Counterspell' })
+    await workspace.searchRow(row)
+
+    expect(workspace.rows.value).toHaveLength(1)
+    expect(workspace.rows.value[0]?.name).toBe('Counterspell')
+  })
+
   it('applies a global language without replacing an explicit override', async () => {
     const spanishPrinting = { ...printing, id: 'printing-es', language: 'es' }
     const client = {
@@ -142,5 +163,25 @@ describe('useProxyWorkspace', () => {
 
     expect(print).toHaveBeenCalledOnce()
     print.mockRestore()
+  })
+
+  it('keeps ink-saving disabled and preserves workspace data when enabled', async () => {
+    const client = {
+      searchPrintings: vi.fn().mockResolvedValue([printing]),
+    }
+    const workspace = useProxyWorkspace(client)
+
+    workspace.rawList.value = 'Lightning Bolt'
+    workspace.importList()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    const rowsBefore = JSON.stringify(workspace.rows.value)
+    const pagesBefore = JSON.stringify(workspace.pages.value)
+    expect(workspace.inkSaving.value).toBe(false)
+
+    workspace.setInkSaving(true)
+
+    expect(workspace.inkSaving.value).toBe(true)
+    expect(JSON.stringify(workspace.rows.value)).toBe(rowsBefore)
+    expect(JSON.stringify(workspace.pages.value)).toBe(pagesBefore)
   })
 })

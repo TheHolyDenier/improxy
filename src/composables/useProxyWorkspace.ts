@@ -41,6 +41,7 @@ export function useProxyWorkspace(
   const rows = ref<CardRowState[]>([])
   const parseErrors = ref<string[]>([])
   const globalLanguage = ref(defaultCardLanguage)
+  const inkSaving = ref(false)
   const searchRequests = new Map<string, Promise<void>>()
 
   const totalCopies = computed(() =>
@@ -199,11 +200,16 @@ export function useProxyWorkspace(
     window.print()
   }
 
+  function setInkSaving(enabled: boolean) {
+    inkSaving.value = enabled
+  }
+
   return {
     rawList,
     rows,
     parseErrors,
     globalLanguage,
+    inkSaving,
     totalCopies,
     unresolvedCount,
     pages,
@@ -216,6 +222,7 @@ export function useProxyWorkspace(
     duplicateRow,
     setGlobalLanguage,
     setRowLanguage,
+    setInkSaving,
     print,
   }
 }

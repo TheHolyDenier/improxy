@@ -16,6 +16,7 @@ const {
   rawList,
   parseErrors,
   globalLanguage,
+  inkSaving,
   rows,
   totalCopies,
   unresolvedCount,
@@ -29,6 +30,7 @@ const {
   duplicateRow,
   setGlobalLanguage,
   setRowLanguage,
+  setInkSaving,
   print,
 } = useProxyWorkspace()
 
@@ -106,7 +108,11 @@ const { t } = useI18n()
       />
     </section>
 
-    <ProxyPrintPreview :pages="pages" />
+    <ProxyPrintPreview
+      :pages="pages"
+      :ink-saving="inkSaving"
+      @update:ink-saving="setInkSaving"
+    />
     <ScrollToTopButton />
   </main>
 </template>

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 
 import CardListInput from '@/components/CardListInput.vue'
 import CardResultCard from '@/components/CardResultCard.vue'
@@ -9,6 +9,12 @@ import ProxyPrintPreview from '@/components/ProxyPrintPreview.vue'
 import ReadinessSummary from '@/components/ReadinessSummary.vue'
 import ScrollToTopButton from '@/components/ScrollToTopButton.vue'
 import type { CardRowState } from '@/domain/card'
+
+vi.mock('@/services/ink-saving-image', () => ({
+  createInkSavingImageUri: vi
+    .fn()
+    .mockResolvedValue('data:image/png;base64,processed'),
+}))
 
 const printing = {
   id: 'printing-1',
@@ -49,11 +55,28 @@ describe('workspace components', () => {
     expect(wrapper.text()).toContain('Nombre')
     expect(wrapper.text()).toContain('Cantidad')
     expect(wrapper.text()).toContain('Set opcional')
+    expect(wrapper.text()).toContain('1 edición')
+    expect(wrapper.text()).not.toContain('1 ediciones')
     expect(wrapper.find('.row-number').exists()).toBe(false)
 
     await wrapper.find('button.base-button--danger').trigger('click')
 
     expect(wrapper.emitted('remove')).toHaveLength(1)
+  })
+
+  it('searches a row without emitting a duplicate action', async () => {
+    const wrapper = mount(CardRowEditor, { props: { row } })
+    const searchButton = wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Buscar')
+    if (!searchButton) {
+      throw new Error('Search button was not rendered')
+    }
+
+    await searchButton.trigger('click')
+
+    expect(wrapper.emitted('search')).toHaveLength(1)
+    expect(wrapper.emitted('duplicate')).toBeUndefined()
   })
 
   it('renders printing metadata', () => {
@@ -149,6 +172,58 @@ describe('workspace components', () => {
     expect(wrapper.findAll('.print-slot')).toHaveLength(9)
   })
 
+  it('renders and emits the ink-saving preference', async () => {
+    const wrapper = mount(ProxyPrintPreview, {
+      props: {
+        pages: [{ copies: [{ rowId: row.id, printing }] }],
+        inkSaving: false,
+      },
+    })
+
+    const checkbox = wrapper.find('input[type="checkbox"]')
+    expect(checkbox.attributes('aria-label')).toBe(
+      'Filtro texto / ahorrar tinta',
+    )
+    await checkbox.setValue(true)
+
+    expect(wrapper.emitted('update:inkSaving')?.[0]).toEqual([true])
+  })
+
+  it('marks the printable region without changing its slot count', () => {
+    const wrapper = mount(ProxyPrintPreview, {
+      props: {
+        pages: [{ copies: [{ rowId: row.id, printing }] }],
+        inkSaving: true,
+      },
+    })
+
+    expect(wrapper.find('.print-pages').classes()).toContain(
+      'print-pages--ink-saving',
+    )
+    expect(wrapper.find('.print-slot__image').exists()).toBe(true)
+    expect(wrapper.findAll('.print-slot')).toHaveLength(9)
+  })
+
+  it('restores original image URLs when ink saving is disabled', async () => {
+    const wrapper = mount(ProxyPrintPreview, {
+      props: {
+        pages: [{ copies: [{ rowId: row.id, printing }] }],
+        inkSaving: true,
+      },
+    })
+
+    await flushPromises()
+    expect(wrapper.find('.print-slot__image').attributes('src')).toBe(
+      'data:image/png;base64,processed',
+    )
+
+    await wrapper.setProps({ inkSaving: false })
+
+    expect(wrapper.find('.print-slot__image').attributes('src')).toBe(
+      printing.imageUri,
+    )
+  })
+
   it('shows a floating button to return to the top', async () => {
     Object.defineProperty(window, 'scrollY', {
       configurable: true,
@@ -165,5 +240,19 @@ describe('workspace components', () => {
 
     expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
     scrollTo.mockRestore()
+  })
+
+  it('keeps floating navigation available through the proxy preview', async () => {
+    Object.defineProperty(window, 'scrollY', {
+      configurable: true,
+      value: 500,
+    })
+
+    const wrapper = mount(ScrollToTopButton)
+
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('button').exists()).toBe(true)
+
+    wrapper.unmount()
   })
 })
