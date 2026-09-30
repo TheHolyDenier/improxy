@@ -79,6 +79,9 @@ export const i18n = createI18n({
         note: 'Imprime al 100 % y desactiva cualquier ajuste automático de escala.',
         empty: 'Resuelve alguna carta para ver la cuadrícula 3x3.',
       },
+      navigation: {
+        backToTop: 'Volver arriba',
+      },
       errors: {
         missingName: 'Escribe un nombre antes de buscar.',
         notFound: 'No encontramos esa carta en Scryfall.',

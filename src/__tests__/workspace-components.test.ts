@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 
 import CardListInput from '@/components/CardListInput.vue'
@@ -7,6 +7,7 @@ import CardRowEditor from '@/components/CardRowEditor.vue'
 import LanguageControls from '@/components/LanguageControls.vue'
 import ProxyPrintPreview from '@/components/ProxyPrintPreview.vue'
 import ReadinessSummary from '@/components/ReadinessSummary.vue'
+import ScrollToTopButton from '@/components/ScrollToTopButton.vue'
 import type { CardRowState } from '@/domain/card'
 
 const printing = {
@@ -67,6 +68,19 @@ describe('workspace components', () => {
     expect(wrapper.text()).toContain('Limited Edition Alpha')
   })
 
+  it('groups language variants into one edition option', () => {
+    const spanishPrinting = { ...printing, id: 'printing-es', language: 'es' }
+    const wrapper = mount(CardResultCard, {
+      props: {
+        printings: [printing, spanishPrinting],
+        selectedPrintingId: printing.id,
+        language: 'es',
+      },
+    })
+
+    expect(wrapper.findAll('select')[0]?.findAll('option')).toHaveLength(1)
+  })
+
   it('marks an English fallback when Spanish is unavailable', () => {
     const wrapper = mount(CardResultCard, {
       props: {
@@ -77,6 +91,30 @@ describe('workspace components', () => {
     })
 
     expect(wrapper.text()).toContain('No hay una impresión en Español')
+  })
+
+  it('changes the printing without changing the language preference', async () => {
+    const secondPrinting = {
+      ...printing,
+      id: 'printing-2',
+      setCode: 'frc',
+      setName: 'Reality Fracture Commander',
+      collectorNumber: '25',
+    }
+    const wrapper = mount(CardResultCard, {
+      props: {
+        printings: [printing, secondPrinting],
+        selectedPrintingId: printing.id,
+        language: 'en',
+      },
+    })
+
+    await wrapper.find('select').setValue('frc:25')
+
+    expect(wrapper.emitted('update:language')).toBeUndefined()
+    expect(wrapper.emitted('update:selectedPrintingId')?.[0]).toEqual([
+      secondPrinting.id,
+    ])
   })
 
   it('renders global language controls', () => {
@@ -109,5 +147,23 @@ describe('workspace components', () => {
     })
 
     expect(wrapper.findAll('.print-slot')).toHaveLength(9)
+  })
+
+  it('shows a floating button to return to the top', async () => {
+    Object.defineProperty(window, 'scrollY', {
+      configurable: true,
+      value: 0,
+    })
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    const wrapper = mount(ScrollToTopButton)
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 500 })
+    window.dispatchEvent(new Event('scroll'))
+
+    await wrapper.vm.$nextTick()
+    expect(wrapper.text()).toContain('Volver arriba')
+    await wrapper.find('button').trigger('click')
+
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
+    scrollTo.mockRestore()
   })
 })

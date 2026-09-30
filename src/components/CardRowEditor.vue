@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { CardRowState } from '@/domain/card'
 import BaseButton from './ui/BaseButton.vue'
 import BaseInput from './ui/BaseInput.vue'
 
-defineProps<{
+const props = defineProps<{
   row: CardRowState
 }>()
 
@@ -17,6 +18,14 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const editionCount = computed(
+  () =>
+    new Set(
+      props.row.printings.map(
+        (printing) => `${printing.setCode}:${printing.collectorNumber}`,
+      ),
+    ).size,
+)
 </script>
 
 <template>
@@ -58,7 +67,7 @@ const { t } = useI18n()
         {{ t('row.loading') }}
       </span>
       <span v-else-if="row.status === 'resolved'" class="status status--ok">
-        {{ t('row.editions', { count: row.printings.length }) }}
+        {{ t('row.editions', { count: editionCount }) }}
       </span>
       <span v-else-if="row.status === 'error'" class="status status--error">
         <span :title="row.errorMessage">{{ t('row.error') }}</span>

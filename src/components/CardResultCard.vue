@@ -25,47 +25,86 @@ const languageOptions = computed(() =>
   })),
 )
 
-const selectedPrinting = () =>
-  props.printings.find((printing) => printing.id === props.selectedPrintingId)
+const selectedPrinting = computed(() =>
+  props.printings.find((printing) => printing.id === props.selectedPrintingId),
+)
+
+const printingGroups = computed(() => {
+  const groups = new Map<
+    string,
+    { key: string; printings: ScryfallPrinting[] }
+  >()
+
+  props.printings.forEach((printing) => {
+    const key = `${printing.setCode}:${printing.collectorNumber}`
+    const group = groups.get(key)
+    if (group) {
+      group.printings.push(printing)
+    } else {
+      groups.set(key, { key, printings: [printing] })
+    }
+  })
+
+  return [...groups.values()]
+})
+
+const selectedEditionKey = computed(() => {
+  const printing = selectedPrinting.value
+  return printing ? `${printing.setCode}:${printing.collectorNumber}` : ''
+})
+
+const printingOptions = computed(() =>
+  printingGroups.value.map((group) => {
+    const printing = group.printings[0]
+    return {
+      value: group.key,
+      label: `${printing?.setName} · ${printing?.collectorNumber}`,
+    }
+  }),
+)
 
 const isLanguageFallback = () =>
-  selectedPrinting()?.language !== undefined &&
-  selectedPrinting()?.language !== props.language
+  selectedPrinting.value?.language !== undefined &&
+  selectedPrinting.value.language !== props.language
 
-const selectPrinting = (printingId: string) => {
-  const printing = props.printings.find(
-    (candidate) => candidate.id === printingId,
+const selectPrinting = (editionKey: string) => {
+  const group = printingGroups.value.find(
+    (candidate) => candidate.key === editionKey,
   )
-  emit('update:selectedPrintingId', printingId)
+  const printing =
+    group?.printings.find(
+      (candidate) => candidate.language === props.language,
+    ) ??
+    group?.printings.find((candidate) => candidate.language === 'en') ??
+    group?.printings[0]
+
   if (printing) {
-    emit('update:language', printing.language)
+    emit('update:selectedPrintingId', printing.id)
   }
 }
 </script>
 
 <template>
-  <div
-    class="result-card"
-    :class="{ 'result-card--empty': !selectedPrinting() }"
-  >
+  <div class="result-card" :class="{ 'result-card--empty': !selectedPrinting }">
     <img
-      v-if="selectedPrinting()"
-      :src="selectedPrinting()?.imageUri"
-      :alt="selectedPrinting()?.name"
+      v-if="selectedPrinting"
+      :src="selectedPrinting.imageUri"
+      :alt="selectedPrinting.name"
     />
     <div class="result-card__details">
-      <template v-if="selectedPrinting()">
+      <template v-if="selectedPrinting">
         <p class="eyebrow">{{ t('result.selectedEdition') }}</p>
-        <h3>{{ selectedPrinting()?.setName }}</h3>
+        <h3>{{ selectedPrinting.setName }}</h3>
         <p>
-          {{ selectedPrinting()?.setCode.toUpperCase() }} ·
-          {{ selectedPrinting()?.collectorNumber }}
+          {{ selectedPrinting.setCode.toUpperCase() }} ·
+          {{ selectedPrinting.collectorNumber }} ·
+          {{ t(`cardLanguages.${selectedPrinting.language}`) }}
         </p>
         <p v-if="isLanguageFallback()" class="language-fallback">
           {{
             t('result.languageFallback', {
               requested: t(`cardLanguages.${language}`),
-              fallback: t(`cardLanguages.${selectedPrinting()?.language}`),
+              fallback: t(`cardLanguages.${selectedPrinting.language}`),
             })
           }}
         </p>
@@ -78,14 +117,9 @@ const selectPrinting = (printingId: string) => {
         }}
       </p>
       <BaseSelect
-        :model-value="selectedPrintingId"
+        :model-value="selectedEditionKey"
         :label="t('result.printing')"
-        :options="
-          printings.map((printing) => ({
-            value: printing.id,
-            label: `${printing.setName} · ${printing.collectorNumber}`,
-          }))
-        "
+        :options="printingOptions"
         @update:model-value="selectPrinting($event)"
       />
       <BaseSelect

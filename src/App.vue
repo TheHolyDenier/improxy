@@ -7,6 +7,7 @@ import CardRowEditor from './components/CardRowEditor.vue'
 import LanguageControls from './components/LanguageControls.vue'
 import ProxyPrintPreview from './components/ProxyPrintPreview.vue'
 import ReadinessSummary from './components/ReadinessSummary.vue'
+import ScrollToTopButton from './components/ScrollToTopButton.vue'
 import BaseButton from './components/ui/BaseButton.vue'
 import BaseCard from './components/ui/BaseCard.vue'
 import { useProxyWorkspace } from './composables/useProxyWorkspace'
@@ -106,5 +107,6 @@ const { t } = useI18n()
     </section>
 
     <ProxyPrintPreview :pages="pages" />
+    <ScrollToTopButton />
   </main>
 </template>

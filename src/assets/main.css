@@ -245,11 +245,8 @@ code {
 }
 
 .rows-list {
-  max-height: min(68vh, 760px);
-  overflow-y: auto;
   display: grid;
   gap: 14px;
-  padding-inline-end: 6px;
 }
 
 .row-group {
@@ -395,6 +392,26 @@ code {
   margin-top: 18px;
 }
 
+.scroll-top-button {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 10;
+  padding: 11px 16px;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  color: #fff;
+  background: var(--ink);
+  box-shadow: 0 10px 24px rgba(42, 20, 37, 0.22);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.scroll-top-button:hover {
+  background: var(--pink);
+}
+
 .print-pages {
   display: grid;
   gap: 26px;
@@ -467,6 +484,11 @@ code {
     padding-top: 24px;
   }
 
+  .scroll-top-button {
+    right: 14px;
+    bottom: 14px;
+  }
+
   .hero h1 {
     font-size: 3.9rem;
   }
@@ -495,6 +517,11 @@ code {
 }
 
 @media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
   body {
     background: #fff;
   }
@@ -524,12 +551,18 @@ code {
   }
 
   .print-page {
-    break-after: page;
+    box-sizing: border-box;
+    width: 210mm;
+    height: 278mm;
+    min-height: 0;
+    padding: 5mm 8.5mm;
+    break-after: auto;
+    break-inside: avoid;
     margin: 0;
     box-shadow: none;
   }
 
-  .print-page:last-child {
-    break-after: auto;
+  .print-page + .print-page {
+    break-before: page;
   }
 }
