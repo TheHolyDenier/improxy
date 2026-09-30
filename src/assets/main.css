@@ -353,6 +353,11 @@ code {
   font-size: 0.85rem;
 }
 
+.language-fallback {
+  color: #a42a43 !important;
+  font-weight: 800;
+}
+
 .language-control {
   display: grid;
   gap: 4px;
@@ -522,5 +527,9 @@ code {
     break-after: page;
     margin: 0;
     box-shadow: none;
+  }
+
+  .print-page:last-child {
+    break-after: auto;
   }
 }

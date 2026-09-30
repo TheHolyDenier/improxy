@@ -8,6 +8,18 @@ import { ScryfallClient } from '@/services/scryfall-client'
 
 type ScryfallSearchClient = Pick<ScryfallClient, 'searchPrintings'>
 
+const findPrintingForLanguage = (
+  printings: CardRowState['printings'],
+  language: string,
+) => printings.find((printing) => printing.language === language)
+
+const findPrintingWithFallback = (
+  printings: CardRowState['printings'],
+  language: string,
+) =>
+  findPrintingForLanguage(printings, language) ??
+  findPrintingForLanguage(printings, 'en')
+
 const createRow = (name = '', quantity = 1, setCode = ''): CardRowState => ({
   id: crypto.randomUUID(),
   name,
@@ -63,14 +75,18 @@ export function useProxyWorkspace(
     void searchAll()
   }
 
-  async function searchRow(row: CardRowState) {
+  async function searchRow(
+    row: CardRowState,
+    language = row.languageOverride || globalLanguage.value,
+  ) {
     if (!row.name.trim()) {
       row.status = 'error'
       row.errorMessage = i18n.global.t('errors.missingName')
       return
     }
 
-    const existingRequest = searchRequests.get(row.id)
+    const requestKey = `${row.id}::${language}`
+    const existingRequest = searchRequests.get(requestKey)
     if (existingRequest) {
       await existingRequest
       return
@@ -79,15 +95,13 @@ export function useProxyWorkspace(
     row.status = 'loading'
     row.errorMessage = ''
     const request = client
-      .searchPrintings(row.name, row.setCode)
+      .searchPrintings(row.name, row.setCode, language)
       .then((printings) => {
         row.printings = printings
-        const preferred =
-          printings.find(
-            (printing) =>
-              printing.language ===
-              (row.languageOverride || globalLanguage.value),
-          ) ?? printings[0]
+        const preferred = findPrintingWithFallback(
+          printings,
+          row.languageOverride || globalLanguage.value,
+        )
         row.selectedPrintingId = preferred?.id ?? ''
         row.status = printings.length ? 'resolved' : 'error'
         row.errorMessage = printings.length
@@ -102,9 +116,9 @@ export function useProxyWorkspace(
             : i18n.global.t('errors.searchFailed')
       })
       .finally(() => {
-        searchRequests.delete(row.id)
+        searchRequests.delete(requestKey)
       })
-    searchRequests.set(row.id, request)
+    searchRequests.set(requestKey, request)
     await request
   }
 
@@ -158,11 +172,10 @@ export function useProxyWorkspace(
     globalLanguage.value = language
     rows.value.forEach((row) => {
       if (!row.languageOverride) {
-        const preferred = row.printings.find(
-          (printing) => printing.language === language,
-        )
-        if (preferred) {
-          row.selectedPrintingId = preferred.id
+        row.selectedPrintingId =
+          findPrintingWithFallback(row.printings, language)?.id ?? ''
+        if (!findPrintingForLanguage(row.printings, language)) {
+          void searchRow(row, language)
         }
       }
     })
@@ -175,11 +188,10 @@ export function useProxyWorkspace(
     }
 
     row.languageOverride = language
-    const preferred = row.printings.find(
-      (printing) => printing.language === language,
-    )
-    if (preferred) {
-      row.selectedPrintingId = preferred.id
+    row.selectedPrintingId =
+      findPrintingWithFallback(row.printings, language)?.id ?? ''
+    if (!findPrintingForLanguage(row.printings, language)) {
+      void searchRow(row, language)
     }
   }
 

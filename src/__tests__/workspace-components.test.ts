@@ -67,6 +67,18 @@ describe('workspace components', () => {
     expect(wrapper.text()).toContain('Limited Edition Alpha')
   })
 
+  it('marks an English fallback when Spanish is unavailable', () => {
+    const wrapper = mount(CardResultCard, {
+      props: {
+        printings: [printing],
+        selectedPrintingId: printing.id,
+        language: 'es',
+      },
+    })
+
+    expect(wrapper.text()).toContain('No hay una impresión en Español')
+  })
+
   it('renders global language controls', () => {
     const wrapper = mount(LanguageControls, { props: { modelValue: 'en' } })
 

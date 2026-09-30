@@ -60,6 +60,10 @@ export const i18n = createI18n({
         selectedEdition: 'EDICIÓN SELECCIONADA',
         printing: 'Edición de la carta',
         empty: 'Sin impresión seleccionada.',
+        languageUnavailable:
+          'No hay una impresión disponible en {language}. Elige otro idioma o edición.',
+        languageFallback:
+          'No hay una impresión en {requested}. Se muestra la versión en {fallback}.',
       },
       readiness: {
         kicker: '03 / LISTO PARA SALIR',

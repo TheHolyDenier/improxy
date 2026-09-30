@@ -32,6 +32,24 @@ describe('ScryfallClient', () => {
     })
   })
 
+  it('requests the selected language and English fallback from Scryfall', async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ data: [card] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+
+    await new ScryfallClient(fetcher).searchPrintings(
+      'Flawless Maneuver',
+      '',
+      'es',
+    )
+
+    expect(String(fetcher.mock.calls[0]?.[0])).toContain('lang%3Aes')
+    expect(String(fetcher.mock.calls[0]?.[0])).toContain('lang%3Aen')
+  })
+
   it('maps rate limits to a recoverable error', async () => {
     const fetcher = vi.fn().mockResolvedValue(
       new Response('', {

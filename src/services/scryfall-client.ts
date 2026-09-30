@@ -45,14 +45,15 @@ export class ScryfallClient {
   async searchPrintings(
     name: string,
     setCode = '',
+    language = 'en',
   ): Promise<ScryfallPrinting[]> {
-    const requestKey = `${name.trim().toLowerCase()}::${setCode.toLowerCase()}`
+    const requestKey = `${name.trim().toLowerCase()}::${setCode.toLowerCase()}::${language}`
     const pendingRequest = this.pendingRequests.get(requestKey)
     if (pendingRequest) {
       return pendingRequest
     }
 
-    const request = this.fetchPrintings(name, setCode).finally(() => {
+    const request = this.fetchPrintings(name, setCode, language).finally(() => {
       this.pendingRequests.delete(requestKey)
     })
     this.pendingRequests.set(requestKey, request)
@@ -62,8 +63,11 @@ export class ScryfallClient {
   private async fetchPrintings(
     name: string,
     setCode: string,
+    language: string,
   ): Promise<ScryfallPrinting[]> {
-    const query = `!"${name.trim()}"`
+    const languageQuery =
+      language === 'en' ? 'lang:en' : `(lang:${language} or lang:en)`
+    const query = `!"${name.trim()}" ${languageQuery}`
     const url = new URL('/cards/search', this.baseUrl)
     url.searchParams.set('q', query)
     url.searchParams.set('unique', 'prints')

@@ -57,6 +57,21 @@ describe('useProxyWorkspace', () => {
     expect(workspace.totalCopies.value).toBe(3)
   })
 
+  it('falls back to English when the requested language is unavailable', async () => {
+    const client = {
+      searchPrintings: vi.fn().mockResolvedValue([printing]),
+    }
+    const workspace = useProxyWorkspace(client)
+
+    workspace.rawList.value = 'Lightning Bolt'
+    workspace.importList()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(workspace.globalLanguage.value).toBe('es')
+    expect(workspace.rows.value[0]?.selectedPrintingId).toBe('printing-1')
+    expect(workspace.readyToPrint.value).toBe(true)
+  })
+
   it('duplicates a row as a fresh pending row', () => {
     const client = {
       searchPrintings: vi.fn().mockResolvedValue([printing]),
