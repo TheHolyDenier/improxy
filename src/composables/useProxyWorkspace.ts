@@ -183,10 +183,11 @@ export function useProxyWorkspace(
     }
 
     const searchLabel = getSearchLabel(row)
+    const searchName = row.name.trim() || row.queryName.trim()
     const requestKey = [
       row.id,
       language,
-      row.queryName.trim().toLowerCase(),
+      searchName.toLowerCase(),
       row.setCode.toLowerCase(),
       row.collectorNumber.trim(),
     ].join('::')
@@ -203,7 +204,7 @@ export function useProxyWorkspace(
     const request = (async () => {
       try {
         const printings = await client.searchPrintings(
-          row.queryName,
+          searchName,
           row.setCode,
           language,
           row.collectorNumber,
@@ -340,9 +341,6 @@ export function useProxyWorkspace(
     rows.value.forEach((row) => {
       if (!row.languageOverride) {
         applyPrintingsToRow(row, row.printings, language)
-        if (!findPrintingForLanguage(row.printings, language)) {
-          void searchRow(row, language)
-        }
       }
     })
   }
@@ -355,9 +353,6 @@ export function useProxyWorkspace(
 
     row.languageOverride = language
     applyPrintingsToRow(row, row.printings, language)
-    if (!findPrintingForLanguage(row.printings, language)) {
-      void searchRow(row, language)
-    }
   }
 
   function print() {

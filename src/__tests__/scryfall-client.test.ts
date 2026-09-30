@@ -32,7 +32,7 @@ describe('ScryfallClient', () => {
     })
   })
 
-  it('requests the selected language and English fallback from Scryfall', async () => {
+  it('does not use language to identify a card in Scryfall', async () => {
     const fetcher = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ data: [card] }), {
         status: 200,
@@ -41,13 +41,42 @@ describe('ScryfallClient', () => {
     )
 
     await new ScryfallClient(fetcher).searchPrintings(
-      'Flawless Maneuver',
+      'Lightning Bolt',
       '',
       'es',
     )
 
-    expect(String(fetcher.mock.calls[0]?.[0])).toContain('lang%3Aes')
-    expect(String(fetcher.mock.calls[0]?.[0])).toContain('lang%3Aen')
+    expect(String(fetcher.mock.calls[0]?.[0])).not.toContain('lang%3Aes')
+    expect(String(fetcher.mock.calls[0]?.[0])).not.toContain('lang%3Aen')
+  })
+
+  it('retries with Scryfall canonical name after a localized match', async () => {
+    const localizedCard = {
+      ...card,
+      name: 'Counterspell',
+      printed_name: 'Contrahechizo',
+      lang: 'es',
+    }
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: [localizedCard] }), {
+          status: 200,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: [card] }), {
+          status: 200,
+        }),
+      )
+
+    const result = await new ScryfallClient(fetcher).searchPrintings(
+      'contrahechizo',
+    )
+
+    expect(fetcher).toHaveBeenCalledTimes(2)
+    expect(String(fetcher.mock.calls[1]?.[0])).toContain('%22Counterspell%22')
+    expect(result[0]?.name).toBe('Lightning Bolt')
   })
 
   it('filters results by set and collector number', async () => {

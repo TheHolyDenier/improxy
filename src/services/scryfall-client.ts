@@ -53,21 +53,32 @@ export class ScryfallClient {
     language = 'en',
     collectorNumber = '',
   ): Promise<ScryfallPrinting[]> {
-    const requestKey = `${name.trim().toLowerCase()}::${setCode.toLowerCase()}::${collectorNumber.trim()}::${language}`
+    void language
+    const requestKey = `${name.trim().toLowerCase()}::${setCode.toLowerCase()}::${collectorNumber.trim()}`
     const pendingRequest = this.pendingRequests.get(requestKey)
     if (pendingRequest) {
       return pendingRequest
     }
 
-    const request = this.fetchPrintings(
-      name,
-      setCode,
-      language,
-      collectorNumber,
-    )
+    const request = this.fetchPrintings(name, setCode, collectorNumber)
     this.pendingRequests.set(requestKey, request)
     try {
-      return await request
+      const printings = await request
+      const canonicalName = printings.find(
+        (printing) =>
+          name.trim() &&
+          printing.name.trim().toLowerCase() !== name.trim().toLowerCase(),
+      )?.name
+
+      if (canonicalName) {
+        return await this.fetchPrintings(
+          canonicalName,
+          setCode,
+          collectorNumber,
+        )
+      }
+
+      return printings
     } finally {
       if (this.pendingRequests.get(requestKey) === request) {
         this.pendingRequests.delete(requestKey)
@@ -78,11 +89,8 @@ export class ScryfallClient {
   private async fetchPrintings(
     name: string,
     setCode: string,
-    language: string,
     collectorNumber: string,
   ): Promise<ScryfallPrinting[]> {
-    const languageQuery =
-      language === 'en' ? 'lang:en' : `(lang:${language} or lang:en)`
     const selectors = [
       setCode ? `set:${setCode.trim().toLowerCase()}` : '',
       collectorNumber ? `cn:${collectorNumber.trim()}` : '',
@@ -90,9 +98,7 @@ export class ScryfallClient {
       .filter(Boolean)
       .join(' ')
     const nameQuery = name.trim() ? `!"${name.trim()}"` : ''
-    const query = [nameQuery, languageQuery, selectors]
-      .filter(Boolean)
-      .join(' ')
+    const query = [nameQuery, selectors].filter(Boolean).join(' ')
     const url = new URL('/cards/search', this.baseUrl)
     url.searchParams.set('q', query)
     url.searchParams.set('unique', 'prints')
