@@ -20,24 +20,22 @@ describe('useProxyWorkspace', () => {
     vi.stubGlobal('crypto', { randomUUID: vi.fn(() => `row-${cryptoId++}`) })
   })
 
-  it('keeps row identities and local state when adding and removing rows', () => {
+  it('adds only resolved rows and removes them by identity', async () => {
     const client = {
       searchPrintings: vi.fn().mockResolvedValue([printing]),
     }
     const workspace = useProxyWorkspace(client)
 
     workspace.rawList.value = 'Lightning Bolt'
-    workspace.importList()
+    await workspace.importList()
     const firstRow = workspace.rows.value[0]
-    workspace.addRow()
-
-    expect(workspace.rows.value).toHaveLength(2)
-    expect(workspace.rows.value[0]?.id).toBe(firstRow?.id)
-
-    workspace.removeRow(workspace.rows.value[1]?.id ?? '')
 
     expect(workspace.rows.value).toHaveLength(1)
     expect(workspace.rows.value[0]?.id).toBe(firstRow?.id)
+
+    workspace.removeRow(firstRow?.id ?? '')
+
+    expect(workspace.rows.value).toHaveLength(0)
   })
 
   it('changes quantity without issuing a new search', async () => {
@@ -130,10 +128,36 @@ describe('useProxyWorkspace', () => {
     expect(workspace.parseErrors.value).toEqual([])
     expect(workspace.rows.value[0]).toMatchObject({
       name: 'Lightning Bolt',
+      queryName: '',
       setCode: 'LEA',
       collectorNumber: '161',
       status: 'resolved',
       selectedPrintingId: printing.id,
+    })
+  })
+
+  it('keeps the official name for a quick-add query with set selectors', async () => {
+    const client = {
+      searchPrintings: vi.fn().mockResolvedValue([
+        {
+          ...printing,
+          name: "Cathars' Crusade",
+          setCode: 'inr',
+          setName: 'Innistrad Remastered',
+          collectorNumber: '13',
+        },
+      ]),
+    }
+    const workspace = useProxyWorkspace(client)
+
+    await workspace.addCardFromSyntax('Lightning Bolt e:INR cn:13')
+
+    expect(workspace.rows.value).toHaveLength(1)
+    expect(workspace.rows.value[0]).toMatchObject({
+      queryName: 'Lightning Bolt',
+      name: "Cathars' Crusade",
+      status: 'resolved',
+      selectedPrintingId: 'printing-1',
     })
   })
 
@@ -185,7 +209,8 @@ describe('useProxyWorkspace', () => {
 
     expect(workspace.rows.value).toHaveLength(2)
     expect(workspace.rows.value[1]).toMatchObject({
-      name: 'Lightning Bolt',
+      name: '',
+      queryName: 'Lightning Bolt',
       quantity: 1,
       status: 'idle',
       selectedPrintingId: '',
@@ -207,7 +232,7 @@ describe('useProxyWorkspace', () => {
     const second = workspace.rows.value[1]
     const selectedPrintingId = second?.selectedPrintingId
 
-    workspace.updateRow(first?.id ?? '', { name: 'Dark Ritual' })
+    workspace.updateRow(first?.id ?? '', { queryName: 'Dark Ritual' })
 
     expect(first?.selectedPrintingId).toBe('')
     expect(second?.selectedPrintingId).toBe(selectedPrintingId)
@@ -228,44 +253,38 @@ describe('useProxyWorkspace', () => {
       throw new Error('Expected an imported row')
     }
 
-    workspace.updateRow(row.id, { name: 'Counterspell' })
+    workspace.updateRow(row.id, { queryName: 'Counterspell' })
     await workspace.searchRow(row)
 
     expect(workspace.rows.value).toHaveLength(1)
     expect(workspace.rows.value[0]?.name).toBe(printing.name)
+    expect(workspace.rows.value[0]?.queryName).toBe('Counterspell')
   })
 
-  it('ignores stale results when a card identity changes mid-search', async () => {
-    let resolveOld: ((value: (typeof printing)[]) => void) | undefined
-    const oldRequest = new Promise<(typeof printing)[]>((resolve) => {
-      resolveOld = resolve
+  it('does not expose a row until its search has resolved', async () => {
+    let resolveSearch: ((value: (typeof printing)[]) => void) | undefined
+    const pendingSearch = new Promise<(typeof printing)[]>((resolve) => {
+      resolveSearch = resolve
     })
     const client = {
-      searchPrintings: vi
-        .fn()
-        .mockReturnValueOnce(oldRequest)
-        .mockResolvedValueOnce([
-          { ...printing, name: 'Counterspell', id: 'printing-new' },
-        ]),
+      searchPrintings: vi.fn().mockReturnValue(pendingSearch),
     }
     const workspace = useProxyWorkspace(client)
 
     workspace.rawList.value = 'Lightning Bolt'
     const importPromise = workspace.importList()
     await new Promise((resolve) => setTimeout(resolve, 0))
-    const row = workspace.rows.value[0]
-    if (!row || !resolveOld) {
+    if (!resolveSearch) {
       throw new Error('Expected an in-flight card search')
     }
 
-    workspace.updateRow(row.id, { name: 'Counterspell' })
-    await new Promise((resolve) => setTimeout(resolve, 300))
-    resolveOld([printing])
+    expect(workspace.rows.value).toHaveLength(0)
+    resolveSearch([printing])
     await importPromise
     await new Promise((resolve) => setTimeout(resolve, 0))
 
-    expect(workspace.rows.value[0]?.name).toBe('Counterspell')
-    expect(workspace.rows.value[0]?.selectedPrintingId).toBe('printing-new')
+    expect(workspace.rows.value[0]?.name).toBe(printing.name)
+    expect(workspace.rows.value[0]?.status).toBe('resolved')
   })
 
   it('applies a global language without replacing an explicit override', async () => {

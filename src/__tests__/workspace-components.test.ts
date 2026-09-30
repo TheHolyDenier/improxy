@@ -30,6 +30,7 @@ const row: CardRowState = {
   id: 'row-1',
   sourceLine: 1,
   name: 'Lightning Bolt',
+  queryName: 'Lightning Bolt',
   quantity: 1,
   setCode: '',
   collectorNumber: '',
@@ -114,7 +115,8 @@ describe('workspace components', () => {
       props: {
         row: {
           ...row,
-          name: 'contrahechizo',
+          name: 'Counterspell',
+          queryName: 'contrahechizo',
           printings: [
             { ...printing, name: 'Counterspell' },
             {
@@ -131,6 +133,24 @@ describe('workspace components', () => {
 
     expect(wrapper.text()).toContain('Counterspell')
     expect(wrapper.text()).not.toContain('contrahechizo')
+  })
+
+  it('does not show a separate name skeleton while resolving', () => {
+    const wrapper = mount(CardRowEditor, {
+      props: {
+        row: {
+          ...row,
+          name: '',
+          queryName: 'contrahechizo',
+          status: 'loading',
+          printings: [],
+          selectedPrintingId: '',
+        },
+      },
+    })
+
+    expect(wrapper.find('.row-editor__skeleton').exists()).toBe(false)
+    expect(wrapper.text()).toContain('—')
   })
 
   it('renders quantity controls without search or duplicate actions', async () => {
@@ -221,7 +241,7 @@ describe('workspace components', () => {
   it('renders global language controls', () => {
     const wrapper = mount(LanguageControls, { props: { modelValue: 'en' } })
 
-    expect(wrapper.find('label').text()).toBe('Idioma')
+    expect(wrapper.find('select').attributes('aria-label')).toBe('Idioma')
     expect(wrapper.find('option').text()).toBe('EN')
   })
 

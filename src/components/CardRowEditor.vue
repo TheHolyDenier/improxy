@@ -1,88 +1,93 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Minus, Plus, Trash2 } from 'lucide-vue-next'
 
 import type { CardRowState } from '@/domain/card'
 import BaseButton from './ui/BaseButton.vue'
+import CardResultCard from './CardResultCard.vue'
 
 const emit = defineEmits<{
   update: [patch: Partial<CardRowState>]
   remove: []
+  language: [value: string]
 }>()
 
 const { t } = useI18n()
 const props = defineProps<{
   row: CardRowState
+  language: string
 }>()
-
-const displayName = computed(() => {
-  const canonicalPrinting =
-    props.row.printings.find((printing) => printing.language === 'en') ??
-    props.row.printings.find(
-      (printing) => printing.id === props.row.selectedPrintingId,
-    )
-
-  return canonicalPrinting?.name ?? props.row.name
-})
 </script>
 
 <template>
-  <article
-    class="row-editor"
-    :class="`row-editor--${row.status}`"
-    :aria-disabled="row.status === 'error'"
-  >
-    <div class="row-editor__fields">
-      <div class="row-editor__field">
-        <span class="row-editor__label">{{ t('row.name') }}</span>
-        <strong class="row-editor__value" :title="displayName">
-          {{ displayName || '—' }}
-        </strong>
+  <div class="row-editor-group">
+    <article
+      class="row-editor"
+      :class="`row-editor--${row.status}`"
+      :aria-disabled="row.status === 'error'"
+    >
+      <div class="row-editor__fields">
+        <div class="row-editor__field">
+          <span class="row-editor__label">{{ t('row.name') }}</span>
+          <strong class="row-editor__value" :title="row.name">
+            {{ row.name || '—' }}
+          </strong>
+        </div>
+        <div class="row-editor__field">
+          <span class="row-editor__label">{{ t('row.quantity') }}</span>
+          <div class="row-editor__quantity">
+            <BaseButton
+              type="button"
+              variant="ghost"
+              :aria-label="t('row.decreaseQuantity')"
+              :disabled="row.quantity <= 1 || row.status === 'error'"
+              @click="emit('update', { quantity: row.quantity - 1 })"
+            >
+              <Minus :size="16" aria-hidden="true" />
+            </BaseButton>
+            <output
+              class="row-editor__quantity-value"
+              :aria-label="t('row.quantity')"
+            >
+              {{ row.quantity }}
+            </output>
+            <BaseButton
+              type="button"
+              variant="ghost"
+              :aria-label="t('row.increaseQuantity')"
+              :disabled="row.status === 'error'"
+              @click="emit('update', { quantity: row.quantity + 1 })"
+            >
+              <Plus :size="16" aria-hidden="true" />
+            </BaseButton>
+          </div>
+        </div>
       </div>
-      <div class="row-editor__field">
-        <span class="row-editor__label">{{ t('row.quantity') }}</span>
-        <div class="row-editor__quantity">
+      <div class="row-editor__meta">
+        <div class="row-editor__actions">
           <BaseButton
             type="button"
-            variant="ghost"
-            :aria-label="t('row.decreaseQuantity')"
-            :disabled="row.quantity <= 1 || row.status === 'error'"
-            @click="emit('update', { quantity: row.quantity - 1 })"
+            variant="danger"
+            :aria-label="t('row.remove')"
+            @click.stop="emit('remove')"
           >
-            <Minus :size="16" aria-hidden="true" />
-          </BaseButton>
-          <output
-            class="row-editor__quantity-value"
-            :aria-label="t('row.quantity')"
-          >
-            {{ row.quantity }}
-          </output>
-          <BaseButton
-            type="button"
-            variant="ghost"
-            :aria-label="t('row.increaseQuantity')"
-            :disabled="row.status === 'error'"
-            @click="emit('update', { quantity: row.quantity + 1 })"
-          >
-            <Plus :size="16" aria-hidden="true" />
+            <Trash2 :size="17" aria-hidden="true" />
           </BaseButton>
         </div>
       </div>
-    </div>
-    <div class="row-editor__meta">
-      <div class="row-editor__actions">
-        <BaseButton
-          type="button"
-          variant="danger"
-          :aria-label="t('row.remove')"
-          @click.stop="emit('remove')"
-        >
-          <Trash2 :size="17" aria-hidden="true" />
-        </BaseButton>
-      </div>
-    </div>
-  </article>
+    </article>
+    <CardResultCard
+      :printings="props.row.printings"
+      :selected-printing-id="props.row.selectedPrintingId"
+      :language="props.language"
+      :status="props.row.status"
+      :error-message="props.row.errorMessage"
+      @update:selected-printing-id="
+        emit('update', { selectedPrintingId: $event })
+      "
+      @update:language="emit('language', $event)"
+    />
+  </div>
 </template>
 
 <style scoped>

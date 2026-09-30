@@ -23,6 +23,17 @@ const findPrintingWithFallback = (
   findPrintingForLanguage(printings, language) ??
   findPrintingForLanguage(printings, 'en')
 
+const applyPrintingsToRow = (
+  row: CardRowState,
+  printings: CardRowState['printings'],
+  language: string,
+) => {
+  const preferred = findPrintingWithFallback(printings, language)
+  row.printings = printings
+  row.name = findCanonicalPrinting(printings)?.name ?? preferred?.name ?? ''
+  row.selectedPrintingId = preferred?.id ?? ''
+}
+
 const appendUniqueErrors = (current: string[], next: string[]) => [
   ...new Set([...current, ...next]),
 ]
@@ -36,7 +47,8 @@ const createRow = (
 ): CardRowState => ({
   id: crypto.randomUUID(),
   sourceLine,
-  name,
+  name: '',
+  queryName: name,
   quantity,
   setCode,
   collectorNumber,
@@ -71,8 +83,8 @@ export function useProxyWorkspace(
   }
 
   function getSearchLabel(row: CardRowState) {
-    if (row.name.trim()) {
-      return row.name.trim()
+    if (row.queryName.trim()) {
+      return row.queryName.trim()
     }
 
     return `e:${row.setCode.toUpperCase()} cn:${row.collectorNumber.trim()}`
@@ -112,23 +124,60 @@ export function useProxyWorkspace(
         message: error.message,
       }),
     )
-    rows.value = result.entries.map((entry) =>
-      createRow(
+    const resolvedRows = await Promise.all(
+      result.entries.map((entry) => resolveEntry(entry)),
+    )
+    rows.value = resolvedRows.filter((row): row is CardRowState => row !== null)
+  }
+
+  async function resolveEntry(entry: {
+    name: string
+    quantity: number
+    setCode: string
+    collectorNumber: string
+    sourceLine: number
+  }): Promise<CardRowState | null> {
+    const searchLabel = entry.name.trim()
+      ? entry.name.trim()
+      : `e:${entry.setCode.toUpperCase()} cn:${entry.collectorNumber.trim()}`
+
+    try {
+      const printings = await client.searchPrintings(
+        entry.name,
+        entry.setCode,
+        globalLanguage.value,
+        entry.collectorNumber,
+      )
+      if (!printings.length) {
+        parseErrors.value = appendUniqueErrors(parseErrors.value, [
+          i18n.global.t('errors.notFoundNamed', { name: searchLabel }),
+        ])
+        return null
+      }
+
+      const row = createRow(
         entry.name,
         entry.quantity,
         entry.setCode,
         entry.collectorNumber,
         entry.sourceLine,
-      ),
-    )
-    await searchAll()
+      )
+      applyPrintingsToRow(row, printings, globalLanguage.value)
+      row.status = 'resolved'
+      return row
+    } catch {
+      parseErrors.value = appendUniqueErrors(parseErrors.value, [
+        i18n.global.t('errors.searchFailedNamed', { name: searchLabel }),
+      ])
+      return null
+    }
   }
 
   async function searchRow(
     row: CardRowState,
     language = row.languageOverride || globalLanguage.value,
   ) {
-    if (!row.name.trim() && !(row.setCode && row.collectorNumber)) {
+    if (!row.queryName.trim() && !(row.setCode && row.collectorNumber)) {
       rejectRow(row, i18n.global.t('errors.missingName'))
       return
     }
@@ -137,7 +186,7 @@ export function useProxyWorkspace(
     const requestKey = [
       row.id,
       language,
-      row.name.trim().toLowerCase(),
+      row.queryName.trim().toLowerCase(),
       row.setCode.toLowerCase(),
       row.collectorNumber.trim(),
     ].join('::')
@@ -154,7 +203,7 @@ export function useProxyWorkspace(
     const request = (async () => {
       try {
         const printings = await client.searchPrintings(
-          row.name,
+          row.queryName,
           row.setCode,
           language,
           row.collectorNumber,
@@ -162,14 +211,11 @@ export function useProxyWorkspace(
         if (searchVersions.get(row.id) !== version) {
           return
         }
-        row.printings = printings
-        const preferred = findPrintingWithFallback(
+        applyPrintingsToRow(
+          row,
           printings,
           row.languageOverride || globalLanguage.value,
         )
-        row.name =
-          findCanonicalPrinting(printings)?.name ?? preferred?.name ?? row.name
-        row.selectedPrintingId = preferred?.id ?? ''
         if (!printings.length) {
           rejectRow(
             row,
@@ -195,16 +241,12 @@ export function useProxyWorkspace(
     await request
   }
 
-  async function searchAll() {
-    await Promise.all(rows.value.map((row) => searchRow(row)))
-  }
-
   function scheduleSearch(row: CardRowState) {
     const existingTimer = searchTimers.get(row.id)
     if (existingTimer) {
       clearTimeout(existingTimer)
     }
-    if (!row.name.trim()) {
+    if (!row.queryName.trim()) {
       return
     }
 
@@ -222,7 +264,7 @@ export function useProxyWorkspace(
     }
 
     const searchChanged =
-      ('name' in patch && patch.name !== row.name) ||
+      ('queryName' in patch && patch.queryName !== row.queryName) ||
       ('setCode' in patch && patch.setCode !== row.setCode) ||
       ('collectorNumber' in patch &&
         patch.collectorNumber !== row.collectorNumber)
@@ -232,13 +274,10 @@ export function useProxyWorkspace(
       row.status = 'idle'
       row.printings = []
       row.selectedPrintingId = ''
+      row.name = ''
       row.errorMessage = ''
       scheduleSearch(row)
     }
-  }
-
-  function addRow() {
-    rows.value.push(createRow())
   }
 
   async function addCardFromSyntax(value: string) {
@@ -259,18 +298,18 @@ export function useProxyWorkspace(
     }
 
     const [entry] = result.entries
+    const row = await resolveEntry({
+      ...entry,
+      sourceLine,
+    })
+    if (!row) {
+      return
+    }
+
     rawList.value = rawList.value.trim()
       ? `${rawList.value.trim()}\n${value}`
       : value
-    const row = createRow(
-      entry.name,
-      entry.quantity,
-      entry.setCode,
-      entry.collectorNumber,
-      sourceLine,
-    )
     rows.value.push(row)
-    await searchRow(row)
   }
 
   function removeRow(rowId: string) {
@@ -287,6 +326,8 @@ export function useProxyWorkspace(
       ...source,
       id: crypto.randomUUID(),
       sourceLine: 0,
+      name: '',
+      queryName: source.queryName,
       status: 'idle',
       errorMessage: '',
       printings: [],
@@ -298,8 +339,7 @@ export function useProxyWorkspace(
     globalLanguage.value = language
     rows.value.forEach((row) => {
       if (!row.languageOverride) {
-        row.selectedPrintingId =
-          findPrintingWithFallback(row.printings, language)?.id ?? ''
+        applyPrintingsToRow(row, row.printings, language)
         if (!findPrintingForLanguage(row.printings, language)) {
           void searchRow(row, language)
         }
@@ -314,8 +354,7 @@ export function useProxyWorkspace(
     }
 
     row.languageOverride = language
-    row.selectedPrintingId =
-      findPrintingWithFallback(row.printings, language)?.id ?? ''
+    applyPrintingsToRow(row, row.printings, language)
     if (!findPrintingForLanguage(row.printings, language)) {
       void searchRow(row, language)
     }
@@ -343,7 +382,6 @@ export function useProxyWorkspace(
     importList,
     searchRow,
     updateRow,
-    addRow,
     addCardFromSyntax,
     removeRow,
     duplicateRow,

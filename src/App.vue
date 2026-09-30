@@ -3,7 +3,6 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CardListInput from './components/CardListInput.vue'
-import CardResultCard from './components/CardResultCard.vue'
 import CardRowEditor from './components/CardRowEditor.vue'
 import LanguageControls from './components/LanguageControls.vue'
 import ProxyPrintPreview from './components/ProxyPrintPreview.vue'
@@ -99,19 +98,10 @@ async function addQuickCard() {
           <div v-for="row in visibleRows" :key="row.id" class="app__row-group">
             <CardRowEditor
               :row="row"
+              :language="row.languageOverride || globalLanguage"
               @update="updateRow(row.id, $event)"
               @remove="removeRow(row.id)"
-            />
-            <CardResultCard
-              :printings="row.printings"
-              :selected-printing-id="row.selectedPrintingId"
-              :language="row.languageOverride || globalLanguage"
-              :status="row.status"
-              :error-message="row.errorMessage"
-              @update:selected-printing-id="
-                updateRow(row.id, { selectedPrintingId: $event })
-              "
-              @update:language="setRowLanguage(row.id, $event)"
+              @language="setRowLanguage(row.id, $event)"
             />
           </div>
         </div>

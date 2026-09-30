@@ -19,7 +19,14 @@ export interface ScryfallPrinting {
   readonly imageUri: string
 }
 
-export interface CardRowState extends CardListEntry {
+export interface CardRowState {
+  readonly id: string
+  readonly sourceLine: number
+  name: string
+  queryName: string
+  quantity: number
+  setCode: string
+  collectorNumber: string
   status: RowStatus
   errorMessage: string
   printings: ScryfallPrinting[]

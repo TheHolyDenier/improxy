@@ -170,7 +170,7 @@ function selectPrinting(editionKey: string) {
 
 .result-card__controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 86px;
+  grid-template-columns: minmax(0, 1fr) 70px;
   align-items: end;
   gap: 8px;
   margin-top: 4px;

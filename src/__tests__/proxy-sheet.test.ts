@@ -17,6 +17,7 @@ const row = (quantity: number): CardRowState => ({
   id: 'row-1',
   sourceLine: 1,
   name: 'Lightning Bolt',
+  queryName: 'Lightning Bolt',
   quantity,
   setCode: '',
   collectorNumber: '',

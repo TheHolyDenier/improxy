@@ -24,9 +24,6 @@ const languageOptions = computed(() =>
 
 <template>
   <div class="language-control">
-    <label class="language-control__label" for="global-language">
-      {{ t('language.global') }}
-    </label>
     <BaseSelect
       id="global-language"
       :model-value="modelValue"
@@ -41,12 +38,6 @@ const languageOptions = computed(() =>
 .language-control {
   display: grid;
   gap: 4px;
-  width: 86px;
-}
-
-.language-control__label {
-  color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 800;
+  width: 70px;
 }
 </style>
