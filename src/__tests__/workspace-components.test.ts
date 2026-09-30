@@ -59,7 +59,7 @@ describe('workspace components', () => {
     expect(wrapper.text()).not.toContain('1 ediciones')
     expect(wrapper.find('.row-number').exists()).toBe(false)
 
-    await wrapper.find('button.base-button--danger').trigger('click')
+    await wrapper.find('button.button--danger').trigger('click')
 
     expect(wrapper.emitted('remove')).toHaveLength(1)
   })
@@ -169,7 +169,7 @@ describe('workspace components', () => {
       props: { pages: [{ copies: [{ rowId: row.id, printing }] }] },
     })
 
-    expect(wrapper.findAll('.print-slot')).toHaveLength(9)
+    expect(wrapper.findAll('.print-preview__slot')).toHaveLength(9)
   })
 
   it('renders and emits the ink-saving preference', async () => {
@@ -197,11 +197,11 @@ describe('workspace components', () => {
       },
     })
 
-    expect(wrapper.find('.print-pages').classes()).toContain(
-      'print-pages--ink-saving',
+    expect(wrapper.find('.print-preview__pages').classes()).toContain(
+      'print-preview__pages--ink-saving',
     )
-    expect(wrapper.find('.print-slot__image').exists()).toBe(true)
-    expect(wrapper.findAll('.print-slot')).toHaveLength(9)
+    expect(wrapper.find('.print-preview__image').exists()).toBe(true)
+    expect(wrapper.findAll('.print-preview__slot')).toHaveLength(9)
   })
 
   it('restores original image URLs when ink saving is disabled', async () => {
@@ -213,13 +213,13 @@ describe('workspace components', () => {
     })
 
     await flushPromises()
-    expect(wrapper.find('.print-slot__image').attributes('src')).toBe(
+    expect(wrapper.find('.print-preview__image').attributes('src')).toBe(
       'data:image/png;base64,processed',
     )
 
     await wrapper.setProps({ inkSaving: false })
 
-    expect(wrapper.find('.print-slot__image').attributes('src')).toBe(
+    expect(wrapper.find('.print-preview__image').attributes('src')).toBe(
       printing.imageUri,
     )
   })

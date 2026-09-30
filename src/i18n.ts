@@ -33,6 +33,7 @@ export const i18n = createI18n({
           'Una carta por línea. El nombre es suficiente: la cantidad empieza en 1. También puedes usar',
         placeholder:
           'Lightning Bolt\n2 Counterspell (STA)\nSheoldred, the Apocalypse',
+        example: '2 Lightning Bolt (STA)',
         label: 'Lista de cartas',
         convert: 'Convertir en filas',
       },
@@ -92,6 +93,8 @@ export const i18n = createI18n({
         missingName: 'Escribe un nombre antes de buscar.',
         notFound: 'No encontramos esa carta en Scryfall.',
         searchFailed: 'No se pudo buscar la carta.',
+        inkSavingProcessing:
+          'No se pudo preparar una imagen para ahorrar tinta.',
         parseLine: 'Línea {line}: {message}',
       },
     },

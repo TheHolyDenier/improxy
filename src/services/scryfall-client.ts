@@ -53,11 +53,15 @@ export class ScryfallClient {
       return pendingRequest
     }
 
-    const request = this.fetchPrintings(name, setCode, language).finally(() => {
-      this.pendingRequests.delete(requestKey)
-    })
+    const request = this.fetchPrintings(name, setCode, language)
     this.pendingRequests.set(requestKey, request)
-    return request
+    try {
+      return await request
+    } finally {
+      if (this.pendingRequests.get(requestKey) === request) {
+        this.pendingRequests.delete(requestKey)
+      }
+    }
   }
 
   private async fetchPrintings(

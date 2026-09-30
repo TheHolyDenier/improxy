@@ -36,3 +36,29 @@ onUnmounted(() => {
     </button>
   </div>
 </template>
+
+<style scoped>
+.scroll-top-slot {
+  display: flex;
+  min-height: 46px;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+.scroll-top-button {
+  align-self: flex-end;
+  padding: 11px 16px;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  color: #fff;
+  background: var(--ink);
+  box-shadow: 0 10px 24px rgba(42, 20, 37, 0.22);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.scroll-top-button:hover {
+  background: var(--pink);
+}
+</style>

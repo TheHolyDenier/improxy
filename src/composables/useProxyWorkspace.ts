@@ -95,9 +95,13 @@ export function useProxyWorkspace(
 
     row.status = 'loading'
     row.errorMessage = ''
-    const request = client
-      .searchPrintings(row.name, row.setCode, language)
-      .then((printings) => {
+    const request = (async () => {
+      try {
+        const printings = await client.searchPrintings(
+          row.name,
+          row.setCode,
+          language,
+        )
         row.printings = printings
         const preferred = findPrintingWithFallback(
           printings,
@@ -108,17 +112,16 @@ export function useProxyWorkspace(
         row.errorMessage = printings.length
           ? ''
           : i18n.global.t('errors.notFound')
-      })
-      .catch((error: unknown) => {
+      } catch (error: unknown) {
         row.status = 'error'
         row.errorMessage =
           error instanceof Error
             ? error.message
             : i18n.global.t('errors.searchFailed')
-      })
-      .finally(() => {
+      } finally {
         searchRequests.delete(requestKey)
-      })
+      }
+    })()
     searchRequests.set(requestKey, request)
     await request
   }

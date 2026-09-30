@@ -88,19 +88,20 @@ const selectPrinting = (editionKey: string) => {
   <div class="result-card" :class="{ 'result-card--empty': !selectedPrinting }">
     <img
       v-if="selectedPrinting"
+      class="result-card__image"
       :src="selectedPrinting.imageUri"
       :alt="selectedPrinting.name"
     />
     <div class="result-card__details">
       <template v-if="selectedPrinting">
-        <p class="eyebrow">{{ t('result.selectedEdition') }}</p>
-        <h3>{{ selectedPrinting.setName }}</h3>
-        <p>
+        <p class="result-card__eyebrow">{{ t('result.selectedEdition') }}</p>
+        <h3 class="result-card__title">{{ selectedPrinting.setName }}</h3>
+        <p class="result-card__metadata">
           {{ selectedPrinting.setCode.toUpperCase() }} ·
           {{ selectedPrinting.collectorNumber }} ·
           {{ t(`cardLanguages.${selectedPrinting.language}`) }}
         </p>
-        <p v-if="isLanguageFallback()" class="language-fallback">
+        <p v-if="isLanguageFallback()" class="result-card__fallback">
           {{
             t('result.languageFallback', {
               requested: t(`cardLanguages.${language}`),
@@ -109,7 +110,7 @@ const selectPrinting = (editionKey: string) => {
           }}
         </p>
       </template>
-      <p v-else class="inline-error">
+      <p v-else class="result-card__error">
         {{
           t('result.languageUnavailable', {
             language: t(`cardLanguages.${language}`),
@@ -131,3 +132,60 @@ const selectPrinting = (editionKey: string) => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.result-card {
+  display: flex;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #f7eefa;
+}
+
+.result-card__image {
+  align-self: flex-start;
+  flex: 0 0 auto;
+  width: 96px;
+  height: 134px;
+  aspect-ratio: 63 / 88;
+  border-radius: 8px;
+  background: #fff;
+  object-fit: contain;
+  box-shadow: 0 8px 18px rgba(42, 20, 37, 0.2);
+}
+
+.result-card__details {
+  display: grid;
+  flex: 1;
+  align-content: center;
+  gap: 8px;
+}
+
+.result-card__eyebrow {
+  margin: 0;
+  color: var(--pink-dark);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.result-card__title {
+  margin: 0 0 4px;
+}
+
+.result-card__metadata {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.result-card__fallback {
+  color: #a42a43;
+  font-weight: 800;
+}
+
+.result-card__error {
+  color: #a42a43;
+  font-size: 0.82rem;
+}
+</style>
