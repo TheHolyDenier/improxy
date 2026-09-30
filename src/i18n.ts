@@ -40,7 +40,7 @@ export const i18n = createI18n({
       },
       workspace: {
         kicker: '02 / Elige idioma y edición',
-        title: 'Ajusta el mazo a tu gusto',
+        title: 'Escoge tu veneno',
         subtitle: 'Edita tus cartas',
         empty: 'Añade una lista o una carta para empezar.',
         add: '+ Añadir carta',
@@ -64,7 +64,6 @@ export const i18n = createI18n({
         quantity: 'Cantidad',
         set: 'Edición',
         collectorNumber: 'N.º de carta',
-        automatic: 'Automática',
         loading: 'Buscando…',
         editions: '{count} edición | {count} ediciones',
         error: 'No se pudo encontrar',

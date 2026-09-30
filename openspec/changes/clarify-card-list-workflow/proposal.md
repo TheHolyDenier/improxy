@@ -6,7 +6,7 @@ The first product feedback is that the current interface is confusing: the card-
 
 ## What Changes
 
-- Rework the page into three user-facing steps with playful but meaningful titles: **Pon las cartas sobre la mesa** (añadir cartas), **Ajusta el mazo a tu gusto** (elegir idioma y edición), and **Calienta rodillos** (imprimir).
+- Rework the page into three user-facing steps with playful but meaningful titles: **Pon las cartas sobre la mesa** (añadir cartas), **Escoge tu veneno** (elegir idioma y edición), and **Calienta rodillos** (imprimir).
 - Make the card row the primary adjustment surface: the resolved card name remains fixed, quantity and removal are adjusted in the row, while the selected edition/set and language remain adjustable in the result card.
 - Add set plus collector-number selection during card addition, including input syntax such as `e:INR cn:13`.
 - Add a quick-add control inside the first card: a playful syntax input that accepts a card name or selectors such as `e:INR cn:13`, then creates the card in the editable list and resolves it automatically.

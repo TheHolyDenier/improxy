@@ -49,7 +49,7 @@ When an import search returns no matching printing, the import pipeline should r
 
 Use step headings and layout grouping in `App.vue` rather than adding a new routing or wizard state. The adjustment area contains row editing and language controls; the printing area contains readiness messaging, print action, ink-saving controls, and the preview. This preserves direct scrolling and the current print media behavior while making the information hierarchy explicit.
 
-Step titles should use a short, memorable phrase preceded by an explicit action subtitle. For example, “Pon las cartas sobre la mesa” can be paired with “Añade tus cartas”, “Ajusta el mazo a tu gusto” with “Elige idioma y edición”, and “Calienta rodillos” with “Pulsa imprimir”. This keeps the personality of the existing UI without duplicating the action title.
+Step titles should use a short, memorable phrase preceded by an explicit action subtitle. For example, “Pon las cartas sobre la mesa” can be paired with “Añade tus cartas”, “Escoge tu veneno” with “Elige idioma y edición”, and “Calienta rodillos” with “Pulsa imprimir”. This keeps the personality of the existing UI without duplicating the action title.
 
 ### Use existing icon dependency with accessible text
 

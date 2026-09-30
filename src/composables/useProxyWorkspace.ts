@@ -62,9 +62,7 @@ export function useProxyWorkspace(
     rows.value.reduce(
       (total, row) =>
         total +
-        (row.status === 'resolved' && row.selectedPrintingId
-          ? row.quantity
-          : 0),
+        (row.status !== 'error' && row.selectedPrintingId ? row.quantity : 0),
       0,
     ),
   )
@@ -79,7 +77,7 @@ export function useProxyWorkspace(
     () =>
       rows.value.length > 0 &&
       rows.value.some(
-        (row) => row.status === 'resolved' && row.selectedPrintingId,
+        (row) => row.status !== 'error' && row.selectedPrintingId,
       ),
   )
 

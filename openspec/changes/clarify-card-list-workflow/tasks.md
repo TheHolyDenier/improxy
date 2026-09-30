@@ -19,7 +19,7 @@
 
 ## 3. Clarify workflow structure and language
 
-- [x] 3.1 Restructure the main page headings and grouping into exactly three steps with playful, action-oriented titles—“Pon las cartas sobre la mesa”, “Ajusta el mazo a tu gusto”, and “Calienta rodillos”—with action subtitles and preview inside the printing step; verify app tests assert ordering, clear action subtitles, and absence of a fourth numbered step.
+- [x] 3.1 Restructure the main page headings and grouping into exactly three steps with playful, action-oriented titles—“Pon las cartas sobre la mesa”, “Escoge tu veneno”, and “Calienta rodillos”—with action subtitles and preview inside the printing step; verify app tests assert ordering, clear action subtitles, and absence of a fourth numbered step.
 - [x] 3.2 Move or restyle readiness and preview controls so the print action is enabled only when at least one valid card exists, while rejected input errors remain visible; verify app and component tests cover empty, mixed valid/rejected, and fully rejected workspaces.
 - [x] 3.3 Unify Spanish i18n labels, playful step titles, helper text, parser errors, punctuation, and accessibility labels, removing “línea” as the domain term; verify translation-focused component and parser tests assert the agreed vocabulary and that each title remains understandable.
 - [x] 3.4 Update responsive styles and icon affordances without changing the existing proxy sheet dimensions or print CSS; verify the production build and component tests pass at desktop and narrow-layout breakpoints where covered.
