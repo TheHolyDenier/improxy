@@ -38,7 +38,7 @@ export class ScryfallClient {
   >()
 
   constructor(
-    private readonly fetcher: typeof fetch = fetch,
+    private readonly fetcher: typeof fetch = globalThis.fetch.bind(globalThis),
     private readonly baseUrl = 'https://api.scryfall.com',
   ) {}
 

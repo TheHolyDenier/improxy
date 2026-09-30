@@ -47,7 +47,7 @@ const emit = defineEmits<{
         {{ row.printings.length }} ediciones
       </span>
       <span v-else-if="row.status === 'error'" class="status status--error">
-        {{ row.errorMessage }}
+        <span :title="row.errorMessage">Error al buscar</span>
       </span>
       <span v-else class="status">Pendiente</span>
       <div class="row-actions">

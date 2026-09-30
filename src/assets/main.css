@@ -255,7 +255,7 @@ code {
 
 .row-editor {
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) auto;
+  grid-template-columns: 46px minmax(0, 1fr) minmax(180px, 240px);
   align-items: center;
   gap: 12px;
   padding: 12px;
@@ -286,15 +286,20 @@ code {
 }
 
 .row-meta {
+  min-width: 0;
   display: grid;
   justify-items: end;
   gap: 4px;
 }
 
 .status {
+  max-width: 100%;
+  overflow: hidden;
   color: var(--muted);
   font-size: 0.72rem;
   font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .status--loading {

@@ -74,4 +74,17 @@ describe('ScryfallClient', () => {
 
     expect(fetcher).toHaveBeenCalledTimes(1)
   })
+
+  it('binds the browser fetch function before invoking it', async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ data: [card] }), { status: 200 }),
+      )
+    vi.stubGlobal('fetch', fetcher)
+
+    await new ScryfallClient().searchPrintings('Lightning Bolt')
+
+    expect(fetcher).toHaveBeenCalledOnce()
+  })
 })
