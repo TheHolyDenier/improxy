@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 import BaseButton from './ui/BaseButton.vue'
 import BaseCard from './ui/BaseCard.vue'
 import BaseTextarea from './ui/BaseTextarea.vue'
@@ -12,32 +14,33 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
   import: []
 }>()
+
+const { t } = useI18n()
 </script>
 
 <template>
   <BaseCard class="import-card">
     <div class="section-heading">
       <div>
-        <p class="eyebrow">01 / CARGA RÁPIDA</p>
-        <h2>Pega tu lista</h2>
+        <p class="eyebrow">{{ t('import.kicker') }}</p>
+        <h2>{{ t('import.title') }}</h2>
       </div>
-      <span class="section-badge">NOMBRE = 1</span>
+      <span class="section-badge">{{ t('import.badge') }}</span>
     </div>
     <p class="section-copy">
-      Una carta por línea. El nombre es suficiente: la cantidad empieza en 1.
-      También puedes usar <code>2 Lightning Bolt (STA)</code>.
+      {{ t('import.description') }} <code>2 Lightning Bolt (STA)</code>.
     </p>
     <BaseTextarea
       :model-value="modelValue"
-      label="Lista de cartas"
-      placeholder="Lightning Bolt&#10;2 Counterspell (STA)&#10;Sheoldred, the Apocalypse"
+      :label="t('import.label')"
+      :placeholder="t('import.placeholder')"
       @update:model-value="emit('update:modelValue', $event)"
     />
     <div class="card-actions">
       <span v-if="errorMessages.length" class="inline-error">
         {{ errorMessages.join(' · ') }}
       </span>
-      <BaseButton @click="emit('import')">Convertir en filas</BaseButton>
+      <BaseButton @click="emit('import')">{{ t('import.convert') }}</BaseButton>
     </div>
   </BaseCard>
 </template>

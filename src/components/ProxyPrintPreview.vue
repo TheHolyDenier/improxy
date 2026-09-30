@@ -1,23 +1,27 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 import type { ProxyPage } from '@/domain/proxy-sheet'
 import BaseCard from './ui/BaseCard.vue'
 
 defineProps<{
   pages: ProxyPage[]
 }>()
+
+const { t } = useI18n()
 </script>
 
 <template>
   <BaseCard class="preview-card">
     <div class="section-heading">
       <div>
-        <p class="eyebrow">04 / VISTA DE IMPRESIÓN</p>
-        <h2>Tu hoja, a tamaño real</h2>
+        <p class="eyebrow">{{ t('preview.kicker') }}</p>
+        <h2>{{ t('preview.title') }}</h2>
       </div>
-      <span class="section-badge">63 × 88 MM</span>
+      <span class="section-badge">{{ t('preview.size') }}</span>
     </div>
     <p class="print-note">
-      Imprime al 100 % y desactiva cualquier ajuste automático de escala.
+      {{ t('preview.note') }}
     </p>
     <div class="print-pages">
       <div
@@ -39,7 +43,7 @@ defineProps<{
         </div>
       </div>
       <p v-if="!pages.length" class="empty-preview">
-        Resuelve alguna carta para ver la cuadrícula 3x3.
+        {{ t('preview.empty') }}
       </p>
     </div>
   </BaseCard>

@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { CardListParser } from '@/domain/card-list-parser'
 import type { CardRowState } from '@/domain/card'
 import { ProxySheetComposer } from '@/domain/proxy-sheet'
+import { defaultCardLanguage, i18n } from '@/i18n'
 import { ScryfallClient } from '@/services/scryfall-client'
 
 type ScryfallSearchClient = Pick<ScryfallClient, 'searchPrintings'>
@@ -27,7 +28,7 @@ export function useProxyWorkspace(
   const rawList = ref('')
   const rows = ref<CardRowState[]>([])
   const parseErrors = ref<string[]>([])
-  const globalLanguage = ref('en')
+  const globalLanguage = ref(defaultCardLanguage)
   const searchRequests = new Map<string, Promise<void>>()
 
   const totalCopies = computed(() =>
@@ -50,8 +51,11 @@ export function useProxyWorkspace(
 
   function importList() {
     const result = parser.parse(rawList.value)
-    parseErrors.value = result.errors.map(
-      (error) => `Línea ${error.line}: ${error.message}`,
+    parseErrors.value = result.errors.map((error) =>
+      i18n.global.t('errors.parseLine', {
+        line: error.line,
+        message: error.message,
+      }),
     )
     rows.value = result.entries.map((entry) =>
       createRow(entry.name, entry.quantity, entry.setCode),
@@ -62,7 +66,7 @@ export function useProxyWorkspace(
   async function searchRow(row: CardRowState) {
     if (!row.name.trim()) {
       row.status = 'error'
-      row.errorMessage = 'Escribe un nombre antes de buscar.'
+      row.errorMessage = i18n.global.t('errors.missingName')
       return
     }
 
@@ -88,12 +92,14 @@ export function useProxyWorkspace(
         row.status = printings.length ? 'resolved' : 'error'
         row.errorMessage = printings.length
           ? ''
-          : 'No encontramos esa carta en Scryfall.'
+          : i18n.global.t('errors.notFound')
       })
       .catch((error: unknown) => {
         row.status = 'error'
         row.errorMessage =
-          error instanceof Error ? error.message : 'No se pudo buscar la carta.'
+          error instanceof Error
+            ? error.message
+            : i18n.global.t('errors.searchFailed')
       })
       .finally(() => {
         searchRequests.delete(row.id)

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 import CardListInput from './components/CardListInput.vue'
 import CardResultCard from './components/CardResultCard.vue'
 import CardRowEditor from './components/CardRowEditor.vue'
@@ -28,23 +30,24 @@ const {
   setRowLanguage,
   print,
 } = useProxyWorkspace()
+
+const { t } = useI18n()
 </script>
 
 <template>
   <main class="app-shell">
     <header class="hero">
       <div class="hero__copy">
-        <p class="eyebrow">MTG PROXY PRINTER / 01</p>
+        <p class="eyebrow">{{ t('hero.kicker') }}</p>
         <h1>
-          Cartas listas.
-          <span>Caos controlado.</span>
+          {{ t('hero.title') }}
+          <span>{{ t('hero.titleAccent') }}</span>
         </h1>
-        <p class="hero__lead">
-          Convierte una lista en proxies imprimibles a tamaño real. Sin
-          middleware raro, sin rehacerlo todo por una carta.
-        </p>
+        <p class="hero__lead">{{ t('hero.lead') }}</p>
       </div>
-      <div class="hero__sticker">MAKE IT<br />PRINTABLE</div>
+      <div class="hero__sticker">
+        {{ t('hero.stickerLine1') }}<br />{{ t('hero.stickerLine2') }}
+      </div>
     </header>
 
     <CardListInput
@@ -57,8 +60,8 @@ const {
       <BaseCard class="rows-card">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">02 / AJUSTA SIN MIEDO</p>
-            <h2>Tu lista, en filas</h2>
+            <p class="eyebrow">{{ t('workspace.kicker') }}</p>
+            <h2>{{ t('workspace.title') }}</h2>
           </div>
           <LanguageControls
             :model-value="globalLanguage"
@@ -66,7 +69,7 @@ const {
           />
         </div>
         <div v-if="!rows.length" class="empty-state">
-          Importa una lista o añade una fila para empezar.
+          {{ t('workspace.empty') }}
         </div>
         <div v-else class="rows-list">
           <div v-for="row in rows" :key="row.id" class="row-group">
@@ -90,7 +93,7 @@ const {
           </div>
         </div>
         <BaseButton variant="secondary" @click="addRow">
-          + Añadir carta
+          {{ t('workspace.add') }}
         </BaseButton>
       </BaseCard>
 

@@ -1,5 +1,9 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import type { ScryfallPrinting } from '@/domain/card'
+import { cardLanguageCodes } from '@/i18n'
 import BaseSelect from './ui/BaseSelect.vue'
 
 const props = defineProps<{
@@ -13,13 +17,13 @@ const emit = defineEmits<{
   'update:language': [value: string]
 }>()
 
-const languageOptions = [
-  { value: 'en', label: 'Inglés' },
-  { value: 'es', label: 'Español' },
-  { value: 'ja', label: 'Japonés' },
-  { value: 'de', label: 'Alemán' },
-  { value: 'fr', label: 'Francés' },
-]
+const { t } = useI18n()
+const languageOptions = computed(() =>
+  cardLanguageCodes.map((value) => ({
+    value,
+    label: t(`cardLanguages.${value}`),
+  })),
+)
 
 const selectedPrinting = () =>
   props.printings.find((printing) => printing.id === props.selectedPrintingId)
@@ -29,7 +33,7 @@ const selectedPrinting = () =>
   <div v-if="selectedPrinting()" class="result-card">
     <img :src="selectedPrinting()?.imageUri" :alt="selectedPrinting()?.name" />
     <div class="result-card__details">
-      <p class="eyebrow">EDICIÓN SELECCIONADA</p>
+      <p class="eyebrow">{{ t('result.selectedEdition') }}</p>
       <h3>{{ selectedPrinting()?.setName }}</h3>
       <p>
         {{ selectedPrinting()?.setCode.toUpperCase() }} ·
@@ -37,7 +41,7 @@ const selectedPrinting = () =>
       </p>
       <BaseSelect
         :model-value="selectedPrintingId"
-        label="Edición de la carta"
+        :label="t('result.printing')"
         :options="
           printings.map((printing) => ({
             value: printing.id,
@@ -48,13 +52,13 @@ const selectedPrinting = () =>
       />
       <BaseSelect
         :model-value="language"
-        label="Idioma de la carta"
+        :label="t('language.card')"
         :options="languageOptions"
         @update:model-value="emit('update:language', $event)"
       />
     </div>
   </div>
   <div v-else class="empty-result">
-    <p>Sin impresión seleccionada.</p>
+    <p>{{ t('result.empty') }}</p>
   </div>
 </template>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 import BaseButton from './ui/BaseButton.vue'
 import BaseCard from './ui/BaseCard.vue'
 
@@ -11,20 +13,22 @@ defineProps<{
 const emit = defineEmits<{
   print: []
 }>()
+
+const { t } = useI18n()
 </script>
 
 <template>
   <BaseCard class="readiness-card">
     <div>
-      <p class="eyebrow">03 / LISTO PARA SALIR</p>
-      <h2>{{ totalCopies }} proxies preparados</h2>
+      <p class="eyebrow">{{ t('readiness.kicker') }}</p>
+      <h2>{{ t('readiness.prepared', { count: totalCopies }) }}</h2>
       <p v-if="unresolvedCount">
-        Faltan {{ unresolvedCount }} fila(s) por resolver antes de imprimir.
+        {{ t('readiness.unresolved', { count: unresolvedCount }) }}
       </p>
-      <p v-else>Todo resuelto. Revisa el tamaño y dispara la impresión.</p>
+      <p v-else>{{ t('readiness.complete') }}</p>
     </div>
     <BaseButton :disabled="!ready" @click="emit('print')">
-      Imprimir hojas
+      {{ t('readiness.print') }}
     </BaseButton>
   </BaseCard>
 </template>

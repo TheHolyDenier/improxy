@@ -45,6 +45,11 @@ describe('workspace components', () => {
   it('renders an editable row and emits removal', async () => {
     const wrapper = mount(CardRowEditor, { props: { row } })
 
+    expect(wrapper.text()).toContain('Nombre')
+    expect(wrapper.text()).toContain('Cantidad')
+    expect(wrapper.text()).toContain('Set opcional')
+    expect(wrapper.find('.row-number').exists()).toBe(false)
+
     await wrapper.find('button.base-button--danger').trigger('click')
 
     expect(wrapper.emitted('remove')).toHaveLength(1)
