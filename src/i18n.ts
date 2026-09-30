@@ -93,15 +93,11 @@ export const i18n = createI18n({
         print: 'Imprimir proxies',
       },
       preview: {
-        kicker: 'VISTA PREVIA',
-        title: 'Tu hoja, a tamaño real',
-        subtitle: 'Revisa el resultado antes de imprimir.',
+        title: 'Tu hora del Juan Palomo',
+        subtitle: 'Puedes revisar la previsualización antes de imprimirla.',
         size: '63 × 88 MM',
-        note: 'Imprime al 100 % y desactiva cualquier ajuste automático de escala.',
         empty: 'Añade al menos una carta para ver la cuadrícula 3x3.',
-        inkSaving: 'Ahorro de tinta',
-        inkSavingHelp:
-          'Aclara las imágenes y las pasa a escala de grises para reducir el consumo de tinta.',
+        inkSaving: 'B/N',
       },
       navigation: {
         backToTop: 'Subir al inicio',

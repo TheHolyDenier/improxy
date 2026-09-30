@@ -280,7 +280,7 @@ describe('workspace components', () => {
     })
 
     const checkbox = wrapper.find('input[type="checkbox"]')
-    expect(checkbox.attributes('aria-label')).toBe('Ahorro de tinta')
+    expect(checkbox.attributes('aria-label')).toBe('B/N')
     await checkbox.setValue(true)
 
     expect(wrapper.emitted('update:inkSaving')?.[0]).toEqual([true])

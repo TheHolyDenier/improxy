@@ -102,16 +102,12 @@ function updateInkSaving(event: { target: unknown }) {
   <BaseCard class="print-preview">
     <div class="print-preview__heading">
       <div>
-        <p class="print-preview__eyebrow">{{ t('preview.kicker') }}</p>
+        <p class="print-preview__eyebrow">{{ t('preview.subtitle') }}</p>
         <h2 class="print-preview__title">{{ t('preview.title') }}</h2>
-        <p class="print-preview__subtitle">{{ t('preview.subtitle') }}</p>
       </div>
       <span class="print-preview__badge">{{ t('preview.size') }}</span>
     </div>
     <div class="print-preview__controls">
-      <p class="print-preview__note">
-        {{ t('preview.note') }}
-      </p>
       <label class="print-preview__ink-control">
         <input
           class="print-preview__ink-checkbox"
@@ -122,9 +118,6 @@ function updateInkSaving(event: { target: unknown }) {
         />
         <span class="print-preview__ink-copy">
           <strong>{{ t('preview.inkSaving') }}</strong>
-          <small class="print-preview__ink-help">
-            {{ t('preview.inkSavingHelp') }}
-          </small>
         </span>
       </label>
     </div>
