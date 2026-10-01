@@ -2,6 +2,11 @@ import { computed, ref } from 'vue'
 
 import { CardListParser } from '@/domain/card-list-parser'
 import type { CardRowState } from '@/domain/card'
+import {
+  getPrintingEditionKey,
+  mergePrintings,
+  selectPrintingForLanguage,
+} from '@/domain/card-language'
 import { ProxySheetComposer } from '@/domain/proxy-sheet'
 import { defaultCardLanguage, i18n } from '@/i18n'
 import { ScryfallClient } from '@/services/scryfall-client'
@@ -12,58 +17,25 @@ const SEARCH_INTERVAL_MS = 150
 const wait = (duration: number) =>
   new Promise<void>((resolve) => globalThis.setTimeout(resolve, duration))
 
-const findPrintingForLanguage = (
-  printings: CardRowState['printings'],
-  language: string,
-) => printings.find((printing) => printing.language === language)
-
-const findCanonicalPrinting = (printings: CardRowState['printings']) =>
-  findPrintingForLanguage(printings, 'en') ?? printings[0]
-
-const findPrintingWithFallback = (
-  printings: CardRowState['printings'],
-  language: string,
-) =>
-  findPrintingForLanguage(printings, language) ??
-  findPrintingForLanguage(printings, 'en')
-
-const findPrintingInEdition = (
-  printings: CardRowState['printings'],
-  selectedPrintingId: string,
-  language: string,
-) => {
-  const selected = printings.find(
-    (printing) => printing.id === selectedPrintingId,
+const applyPrintingsToRow = (row: CardRowState, language: string) => {
+  const selectedPrinting = row.printings.find(
+    (printing) => printing.id === row.selectedPrintingId,
   )
-  if (!selected) {
-    return undefined
-  }
-
-  const sameEdition = printings.filter(
-    (printing) =>
-      printing.setCode === selected.setCode &&
-      printing.collectorNumber === selected.collectorNumber,
+  const preferred = selectPrintingForLanguage(
+    row.printings,
+    language,
+    selectedPrinting ? getPrintingEditionKey(selectedPrinting) : '',
   )
-  return (
-    findPrintingForLanguage(sameEdition, language) ??
-    findPrintingForLanguage(sameEdition, 'en') ??
-    sameEdition[0]
-  )
+  row.name =
+    row.printings.find((printing) => printing.language === 'en')?.name ??
+    row.printings[0]?.name ??
+    preferred?.name ??
+    ''
+  row.selectedPrintingId = preferred?.id ?? ''
 }
 
-const applyPrintingsToRow = (
-  row: CardRowState,
-  printings: CardRowState['printings'],
-  language: string,
-  preserveEdition = false,
-) => {
-  const preferred =
-    (preserveEdition
-      ? findPrintingInEdition(printings, row.selectedPrintingId, language)
-      : undefined) ?? findPrintingWithFallback(printings, language)
-  row.printings = printings
-  row.name = findCanonicalPrinting(printings)?.name ?? preferred?.name ?? ''
-  row.selectedPrintingId = preferred?.id ?? ''
+const recordLoadedLanguage = (row: CardRowState, language: string) => {
+  row.loadedLanguages = [...new Set([...row.loadedLanguages, language, 'en'])]
 }
 
 const appendUniqueErrors = (current: string[], next: string[]) => [
@@ -87,6 +59,7 @@ const createRow = (
   status: 'idle',
   errorMessage: '',
   printings: [],
+  loadedLanguages: [],
   selectedPrintingId: '',
   languageOverride: '',
 })
@@ -231,7 +204,9 @@ export function useProxyWorkspace(
         entry.collectorNumber,
         entry.sourceLine,
       )
-      applyPrintingsToRow(row, printings, globalLanguage.value)
+      row.printings = printings
+      recordLoadedLanguage(row, globalLanguage.value)
+      applyPrintingsToRow(row, globalLanguage.value)
       row.status = 'resolved'
       return row
     } catch {
@@ -283,29 +258,22 @@ export function useProxyWorkspace(
         if (searchVersions.get(row.id) !== version) {
           return
         }
-        applyPrintingsToRow(
-          row,
-          printings,
-          row.languageOverride || globalLanguage.value,
-          true,
-        )
-        if (!printings.length) {
-          rejectRow(
-            row,
-            i18n.global.t('errors.notFoundNamed', { name: searchLabel }),
-          )
-        } else {
-          row.status = 'resolved'
-          row.errorMessage = ''
-        }
+        row.printings = mergePrintings(row.printings, printings)
+        recordLoadedLanguage(row, language)
+        applyPrintingsToRow(row, row.languageOverride || globalLanguage.value)
+        row.status = 'resolved'
+        row.errorMessage = row.selectedPrintingId
+          ? ''
+          : i18n.global.t('errors.notFoundNamed', { name: searchLabel })
       } catch {
         if (searchVersions.get(row.id) !== version) {
           return
         }
-        rejectRow(
-          row,
-          i18n.global.t('errors.searchFailedNamed', { name: searchLabel }),
-        )
+        applyPrintingsToRow(row, row.languageOverride || globalLanguage.value)
+        row.status = 'resolved'
+        row.errorMessage = i18n.global.t('errors.searchFailedNamed', {
+          name: searchLabel,
+        })
       } finally {
         searchRequests.delete(requestKey)
       }
@@ -346,6 +314,7 @@ export function useProxyWorkspace(
       searchVersions.set(row.id, (searchVersions.get(row.id) ?? 0) + 1)
       row.status = 'idle'
       row.printings = []
+      row.loadedLanguages = []
       row.selectedPrintingId = ''
       row.name = ''
       row.errorMessage = ''
@@ -407,23 +376,33 @@ export function useProxyWorkspace(
     rows.value = rows.value.filter((row) => row.id !== rowId)
   }
 
-  function setGlobalLanguage(language: string) {
+  async function setGlobalLanguage(language: string) {
     globalLanguage.value = language
-    rows.value.forEach((row) => {
-      if (!row.languageOverride) {
-        applyPrintingsToRow(row, row.printings, language, true)
-      }
-    })
+    await Promise.all(
+      rows.value
+        .filter((row) => !row.languageOverride)
+        .map((row) => updateRowLanguage(row, language)),
+    )
   }
 
-  function setRowLanguage(rowId: string, language: string) {
+  async function updateRowLanguage(row: CardRowState, language: string) {
+    if (row.loadedLanguages.includes(language)) {
+      row.errorMessage = ''
+      applyPrintingsToRow(row, language)
+      return
+    }
+
+    await searchRow(row, language)
+  }
+
+  async function setRowLanguage(rowId: string, language: string) {
     const row = rows.value.find((candidate) => candidate.id === rowId)
     if (!row) {
       return
     }
 
     row.languageOverride = language
-    applyPrintingsToRow(row, row.printings, language, true)
+    await updateRowLanguage(row, language)
   }
 
   function print() {

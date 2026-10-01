@@ -37,6 +37,7 @@ const row: CardRowState = {
   status: 'resolved',
   errorMessage: '',
   printings: [printing],
+  loadedLanguages: ['en'],
   selectedPrintingId: printing.id,
   languageOverride: '',
 }
@@ -220,6 +221,130 @@ describe('workspace components', () => {
     expect(wrapper.find('input').exists()).toBe(false)
   })
 
+  it('keeps every language selectable and labels languages that need a search', async () => {
+    const wrapper = mount(CardResultCard, {
+      props: {
+        printings: [printing],
+        loadedLanguages: ['en', 'de'],
+        selectedPrintingId: printing.id,
+        language: 'en',
+        status: 'resolved',
+        errorMessage: '',
+      },
+    })
+    const languageSelect = wrapper.find('.result-card__language-control select')
+    const languageOptions = languageSelect.findAll('option')
+
+    expect(languageOptions).toHaveLength(7)
+    expect(languageOptions.map((option) => option.text())).toContain(
+      'JA · buscar',
+    )
+    expect(languageOptions.map((option) => option.text())).toContain(
+      'DE · no disponible',
+    )
+
+    await languageSelect.setValue('ja')
+
+    expect(wrapper.emitted('update:language')?.[0]).toEqual(['ja'])
+  })
+
+  it('filters out editions without the requested language or English fallback', () => {
+    const unrelatedPrinting = {
+      ...printing,
+      id: 'printing-ja-other-edition',
+      setCode: 'neo',
+      setName: 'Neon Dynasty',
+      language: 'ja',
+    }
+    const wrapper = mount(CardResultCard, {
+      props: {
+        printings: [printing, unrelatedPrinting],
+        loadedLanguages: ['en', 'es'],
+        selectedPrintingId: printing.id,
+        language: 'es',
+        status: 'resolved',
+        errorMessage: '',
+      },
+    })
+    const editionOptions = wrapper.findAll(
+      '.result-card__printing-control option',
+    )
+
+    expect(editionOptions).toHaveLength(1)
+    expect(editionOptions[0]?.text()).toContain('Limited Edition Alpha')
+    expect(wrapper.text()).not.toContain('Neon Dynasty')
+  })
+
+  it('explains when no edition has the requested language or English fallback', () => {
+    const wrapper = mount(CardResultCard, {
+      props: {
+        printings: [{ ...printing, language: 'ja' }],
+        loadedLanguages: ['en', 'es'],
+        selectedPrintingId: '',
+        language: 'es',
+        status: 'resolved',
+        errorMessage: '',
+      },
+    })
+
+    expect(wrapper.text()).toContain(
+      'No hay una impresión disponible en español.',
+    )
+    expect(wrapper.find('.result-card__printing-control').exists()).toBe(false)
+    expect(
+      wrapper.findAll('.result-card__language-control option'),
+    ).toHaveLength(7)
+  })
+
+  it('keeps language controls visible and announces a language search in progress', () => {
+    const wrapper = mount(CardResultCard, {
+      props: {
+        printings: [printing],
+        loadedLanguages: ['en'],
+        selectedPrintingId: printing.id,
+        language: 'de',
+        status: 'loading',
+        errorMessage: '',
+      },
+    })
+
+    expect(wrapper.text()).toContain('Buscando…')
+    expect(wrapper.findAll('select')).toHaveLength(2)
+    expect(
+      wrapper.find('.result-card__language-control option:checked').text(),
+    ).toBe('DE · Buscando…')
+  })
+
+  it('offers a retry action after a language search error', async () => {
+    const wrapper = mount(CardResultCard, {
+      props: {
+        printings: [printing],
+        loadedLanguages: ['en'],
+        selectedPrintingId: printing.id,
+        language: 'de',
+        status: 'resolved',
+        errorMessage: 'No se pudo buscar.',
+      },
+    })
+
+    await wrapper.find('.result-card__retry').trigger('click')
+
+    expect(wrapper.emitted('retry-language-search')).toHaveLength(1)
+  })
+
+  it('forwards language search retries from the row editor', async () => {
+    const wrapper = mount(CardRowEditor, {
+      props: {
+        row: { ...row, errorMessage: 'No se pudo buscar.' },
+        language: 'de',
+      },
+    })
+
+    await wrapper.find('.result-card__retry').trigger('click')
+
+    expect(wrapper.emitted('retryLanguageSearch')).toHaveLength(1)
+  })
+
   it('marks an English fallback when Spanish is unavailable', () => {
     const wrapper = mount(CardResultCard, {
       props: {
@@ -254,6 +379,7 @@ describe('workspace components', () => {
     const wrapper = mount(LanguageControls, { props: { modelValue: 'en' } })
 
     expect(wrapper.find('select').attributes('aria-label')).toBe('Idioma')
+    expect(wrapper.findAll('select option')).toHaveLength(7)
     expect(wrapper.find('option').text()).toBe('EN')
   })
 

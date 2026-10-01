@@ -10,6 +10,7 @@ const emit = defineEmits<{
   update: [patch: Partial<CardRowState>]
   remove: []
   language: [value: string]
+  retryLanguageSearch: []
 }>()
 
 const { t } = useI18n()
@@ -78,6 +79,7 @@ const props = defineProps<{
     </article>
     <CardResultCard
       :printings="props.row.printings"
+      :loaded-languages="props.row.loadedLanguages"
       :selected-printing-id="props.row.selectedPrintingId"
       :language="props.language"
       :status="props.row.status"
@@ -86,6 +88,7 @@ const props = defineProps<{
         emit('update', { selectedPrintingId: $event })
       "
       @update:language="emit('language', $event)"
+      @retry-language-search="emit('retryLanguageSearch')"
     />
   </div>
 </template>

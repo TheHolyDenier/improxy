@@ -58,6 +58,29 @@ describe('ScryfallClient', () => {
     expect(result.map((printing) => printing.language)).toEqual(['es', 'en'])
   })
 
+  it('filters unrelated languages from Scryfall responses', async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: [
+            { ...card, id: 'card-es', lang: 'es' },
+            card,
+            { ...card, id: 'card-ja', lang: 'ja' },
+          ],
+        }),
+        { status: 200 },
+      ),
+    )
+
+    const result = await new ScryfallClient(fetcher).searchPrintings(
+      'Lightning Bolt',
+      '',
+      'es',
+    )
+
+    expect(result.map((printing) => printing.language)).toEqual(['es', 'en'])
+  })
+
   it('retries with Scryfall canonical name after a localized match', async () => {
     const localizedCard = {
       ...card,
@@ -194,6 +217,27 @@ describe('ScryfallClient', () => {
     await Promise.all([first, second])
 
     expect(fetcher).toHaveBeenCalledTimes(1)
+  })
+
+  it('normalizes language and set values in request deduplication keys', async () => {
+    let resolveResponse: (response: Response) => void = () => {}
+    const response = new Promise<Response>((resolve) => {
+      resolveResponse = resolve
+    })
+    const fetcher = vi.fn().mockReturnValue(response)
+    const client = new ScryfallClient(fetcher)
+
+    const first = client.searchPrintings('Lightning Bolt', ' LEA ', ' es ')
+    const second = client.searchPrintings('lightning bolt', 'lea', 'es')
+    resolveResponse(
+      new Response(JSON.stringify({ data: [{ ...card, lang: 'es' }] }), {
+        status: 200,
+      }),
+    )
+
+    await Promise.all([first, second])
+
+    expect(fetcher).toHaveBeenCalledOnce()
   })
 
   it('binds the browser fetch function before invoking it', async () => {

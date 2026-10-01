@@ -1,4 +1,5 @@
 import type { ScryfallPrinting } from '@/domain/card'
+import { filterPrintingsByLanguage } from '@/domain/card-language'
 
 interface ScryfallCard {
   id: string
@@ -53,7 +54,8 @@ export class ScryfallClient {
     language = 'en',
     collectorNumber = '',
   ): Promise<ScryfallPrinting[]> {
-    const requestKey = `${name.trim().toLowerCase()}::${setCode.toLowerCase()}::${language.toLowerCase()}::${collectorNumber.trim()}`
+    const normalizedLanguage = language.trim().toLowerCase()
+    const requestKey = `${name.trim().toLowerCase()}::${setCode.trim().toLowerCase()}::${normalizedLanguage}::${collectorNumber.trim()}`
     const pendingRequest = this.pendingRequests.get(requestKey)
     if (pendingRequest) {
       return pendingRequest
@@ -63,7 +65,7 @@ export class ScryfallClient {
       name,
       setCode,
       collectorNumber,
-      language,
+      normalizedLanguage,
     )
     this.pendingRequests.set(requestKey, request)
     try {
@@ -79,11 +81,11 @@ export class ScryfallClient {
           canonicalName,
           setCode,
           collectorNumber,
-          language,
+          normalizedLanguage,
         )
       }
 
-      return printings
+      return filterPrintingsByLanguage(printings, normalizedLanguage)
     } finally {
       if (this.pendingRequests.get(requestKey) === request) {
         this.pendingRequests.delete(requestKey)
@@ -147,7 +149,8 @@ export class ScryfallClient {
       .map((card) => this.toPrinting(card))
       .filter((printing): printing is ScryfallPrinting => printing !== null)
       .filter(
-        (printing) => !setCode || printing.setCode === setCode.toLowerCase(),
+        (printing) =>
+          !setCode || printing.setCode === setCode.trim().toLowerCase(),
       )
       .filter(
         (printing) =>

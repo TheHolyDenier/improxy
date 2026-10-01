@@ -30,6 +30,7 @@ export interface CardRowState {
   status: RowStatus
   errorMessage: string
   printings: ScryfallPrinting[]
+  loadedLanguages: string[]
   selectedPrintingId: string
   languageOverride: string
 }

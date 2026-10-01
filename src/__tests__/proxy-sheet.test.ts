@@ -24,6 +24,7 @@ const row = (quantity: number): CardRowState => ({
   status: 'resolved',
   errorMessage: '',
   printings: [printing],
+  loadedLanguages: ['en'],
   selectedPrintingId: printing.id,
   languageOverride: '',
 })

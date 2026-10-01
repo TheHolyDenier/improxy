@@ -73,6 +73,9 @@ export const i18n = createI18n({
       language: {
         global: 'Idioma',
         card: 'Idioma',
+        loading: 'Buscando…',
+        search: 'buscar',
+        unavailable: 'no disponible',
       },
       row: {
         name: 'Nombre',
@@ -96,6 +99,7 @@ export const i18n = createI18n({
           'No hay una impresión disponible en {language}. Elige otro idioma o edición.',
         languageFallback:
           'No hay una impresión en {requested}. Se muestra la versión en {fallback}.',
+        retryLanguageSearch: 'Reintentar búsqueda',
       },
       readiness: {
         kicker: '03 / Pulsa imprimir',

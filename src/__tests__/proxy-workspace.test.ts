@@ -375,11 +375,201 @@ describe('useProxyWorkspace', () => {
     const first = workspace.rows.value[0]
     const second = workspace.rows.value[1]
 
-    workspace.setRowLanguage(second?.id ?? '', 'en')
-    workspace.setGlobalLanguage('es')
+    await workspace.setRowLanguage(second?.id ?? '', 'en')
+    await workspace.setGlobalLanguage('es')
 
     expect(first?.selectedPrintingId).toBe('printing-es')
     expect(second?.selectedPrintingId).toBe('printing-1')
+    expect(client.searchPrintings).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not re-fetch an explicitly overridden row on global language changes', async () => {
+    const germanPrinting = { ...printing, id: 'printing-de', language: 'de' }
+    const spanishPrinting = { ...printing, id: 'printing-es', language: 'es' }
+    const client = {
+      searchPrintings: vi.fn(
+        async (_name: string, _set: string, language: string) =>
+          language === 'de'
+            ? [germanPrinting, printing]
+            : [spanishPrinting, printing],
+      ),
+    }
+    const workspace = useProxyWorkspace(client)
+    workspace.rawList.value = 'Lightning Bolt\nCounterspell'
+    await workspace.importList()
+    const [first, second] = workspace.rows.value
+    if (!first || !second) {
+      throw new Error('Expected two imported rows')
+    }
+    await workspace.setRowLanguage(second.id, 'en')
+
+    await workspace.setGlobalLanguage('de')
+
+    expect(client.searchPrintings).toHaveBeenCalledTimes(3)
+    expect(client.searchPrintings.mock.calls[2]?.[0]).toBe(first.queryName)
+    expect(first.selectedPrintingId).toBe(germanPrinting.id)
+    expect(second.selectedPrintingId).toBe(printing.id)
+    expect(second.languageOverride).toBe('en')
+  })
+
+  it('searches only rows missing the global language and reuses loaded languages', async () => {
+    const spanishPrinting = {
+      ...printing,
+      id: 'printing-es',
+      language: 'es',
+    }
+    const germanPrinting = {
+      ...printing,
+      id: 'printing-de',
+      language: 'de',
+    }
+    const client = {
+      searchPrintings: vi.fn(
+        async (_name: string, _set: string, language: string) =>
+          language === 'de'
+            ? [germanPrinting, printing]
+            : [spanishPrinting, printing],
+      ),
+    }
+    const workspace = useProxyWorkspace(client)
+    workspace.rawList.value = 'Lightning Bolt\nCounterspell'
+    await workspace.importList()
+    const [first, second] = workspace.rows.value
+    if (!first || !second) {
+      throw new Error('Expected two imported rows')
+    }
+
+    first.printings.push(germanPrinting)
+    first.loadedLanguages.push('de')
+
+    await workspace.setGlobalLanguage('de')
+
+    expect(client.searchPrintings).toHaveBeenCalledTimes(3)
+    expect(first.selectedPrintingId).toBe(germanPrinting.id)
+    expect(second.selectedPrintingId).toBe(germanPrinting.id)
+    expect(second.loadedLanguages).toContain('de')
+
+    await workspace.setGlobalLanguage('es')
+
+    expect(client.searchPrintings).toHaveBeenCalledTimes(3)
+    expect(first.selectedPrintingId).toBe(spanishPrinting.id)
+    expect(second.selectedPrintingId).toBe(spanishPrinting.id)
+  })
+
+  it('loads a per-card language without changing other rows or the global language', async () => {
+    const japanesePrinting = {
+      ...printing,
+      id: 'printing-ja',
+      language: 'ja',
+    }
+    const client = {
+      searchPrintings: vi.fn(
+        async (_name: string, _set: string, language: string) =>
+          language === 'ja' ? [japanesePrinting, printing] : [printing],
+      ),
+    }
+    const workspace = useProxyWorkspace(client)
+    workspace.rawList.value = 'Lightning Bolt\nCounterspell'
+    await workspace.importList()
+    const [first, second] = workspace.rows.value
+    if (!first || !second) {
+      throw new Error('Expected two imported rows')
+    }
+    const firstSelectedPrintingId = first.selectedPrintingId
+
+    await workspace.setRowLanguage(second.id, 'ja')
+
+    expect(workspace.globalLanguage.value).toBe('es')
+    expect(first.selectedPrintingId).toBe(firstSelectedPrintingId)
+    expect(second.selectedPrintingId).toBe(japanesePrinting.id)
+    expect(second.languageOverride).toBe('ja')
+    expect(client.searchPrintings).toHaveBeenCalledTimes(3)
+  })
+
+  it('preserves existing printings and allows retry when a language search fails', async () => {
+    const client = {
+      searchPrintings: vi.fn(
+        async (_name: string, _set: string, language: string) => {
+          if (language === 'de') {
+            throw new Error('Network unavailable')
+          }
+          return [printing]
+        },
+      ),
+    }
+    const workspace = useProxyWorkspace(client)
+    workspace.rawList.value = 'Lightning Bolt'
+    await workspace.importList()
+    const row = workspace.rows.value[0]
+    if (!row) {
+      throw new Error('Expected an imported row')
+    }
+    const selectedPrintingId = row.selectedPrintingId
+
+    await workspace.setGlobalLanguage('de')
+
+    expect(workspace.rows.value).toHaveLength(1)
+    expect(row.selectedPrintingId).toBe(selectedPrintingId)
+    expect(row.status).toBe('resolved')
+    expect(row.errorMessage).toContain('No hemos podido buscar')
+    expect(row.loadedLanguages).not.toContain('de')
+
+    await workspace.searchRow(row, 'de')
+
+    expect(client.searchPrintings).toHaveBeenCalledTimes(3)
+  })
+
+  it('ignores stale language search results after a newer language is selected', async () => {
+    let resolveGerman: ((value: (typeof printing)[]) => void) | undefined
+    let resolveJapanese: ((value: (typeof printing)[]) => void) | undefined
+    const germanPrinting = { ...printing, id: 'printing-de', language: 'de' }
+    const japanesePrinting = { ...printing, id: 'printing-ja', language: 'ja' }
+    const client = {
+      searchPrintings: vi.fn(
+        (
+          _name: string,
+          _set: string,
+          language: string,
+        ): Promise<(typeof printing)[]> => {
+          if (language === 'de') {
+            return new Promise((resolve) => {
+              resolveGerman = resolve
+            })
+          }
+          if (language === 'ja') {
+            return new Promise((resolve) => {
+              resolveJapanese = resolve
+            })
+          }
+          return Promise.resolve([printing])
+        },
+      ),
+    }
+    const workspace = useProxyWorkspace(client)
+    workspace.rawList.value = 'Lightning Bolt'
+    await workspace.importList()
+    const row = workspace.rows.value[0]
+    if (!row) {
+      throw new Error('Expected an imported row')
+    }
+
+    const germanSearch = workspace.setRowLanguage(row.id, 'de')
+    const japaneseSearch = workspace.setRowLanguage(row.id, 'ja')
+
+    await vi.waitFor(() => {
+      expect(client.searchPrintings).toHaveBeenCalledTimes(2)
+    })
+    resolveGerman?.([germanPrinting, printing])
+    await vi.waitFor(() => {
+      expect(client.searchPrintings).toHaveBeenCalledTimes(3)
+    })
+    resolveJapanese?.([japanesePrinting, printing])
+    await Promise.all([germanSearch, japaneseSearch])
+
+    expect(row.languageOverride).toBe('ja')
+    expect(row.selectedPrintingId).toBe(japanesePrinting.id)
+    expect(row.printings.map(({ id }) => id)).not.toContain(germanPrinting.id)
+    expect(row.status).toBe('resolved')
   })
 
   it('changes language within the selected edition', async () => {

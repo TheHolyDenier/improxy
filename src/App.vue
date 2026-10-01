@@ -27,6 +27,7 @@ const {
   readyToPrint,
   importList,
   updateRow,
+  searchRow,
   addCardFromSyntax,
   removeRow,
   setGlobalLanguage,
@@ -54,8 +55,8 @@ async function addQuickCard() {
   <main class="app">
     <div class="app__import-language">
       <LanguageControls
-          :model-value="globalLanguage"
-          @update:model-value="setGlobalLanguage"
+        :model-value="globalLanguage"
+        @update:model-value="setGlobalLanguage"
       />
     </div>
     <header class="hero">
@@ -114,6 +115,9 @@ async function addQuickCard() {
               @update="updateRow(row.id, $event)"
               @remove="removeRow(row.id)"
               @language="setRowLanguage(row.id, $event)"
+              @retry-language-search="
+                searchRow(row, row.languageOverride || globalLanguage)
+              "
             />
           </div>
         </div>
