@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import { CardListParser } from '@/domain/card-list-parser'
 import type { CardRowState } from '@/domain/card'
@@ -10,8 +10,16 @@ import {
 import { ProxySheetComposer } from '@/domain/proxy-sheet'
 import { defaultCardLanguage, i18n } from '@/i18n'
 import { ScryfallClient } from '@/services/scryfall-client'
+import {
+  createWorkspaceStorage,
+  type WorkspaceStorageLike,
+  type WorkspaceSnapshot,
+} from '@/services/workspace-storage'
 
 type ScryfallSearchClient = Pick<ScryfallClient, 'searchPrintings'>
+export type WorkspacePersistenceError =
+  '' | 'read' | 'malformed' | 'unsupported' | 'write' | 'clear'
+
 const SEARCH_INTERVAL_MS = 150
 
 const wait = (duration: number) =>
@@ -68,6 +76,7 @@ export function useProxyWorkspace(
   client: ScryfallSearchClient = new ScryfallClient(),
   parser = new CardListParser(),
   composer = new ProxySheetComposer(),
+  storageBackend?: WorkspaceStorageLike,
 ) {
   const rawList = ref('')
   const rows = ref<CardRowState[]>([])
@@ -76,6 +85,71 @@ export function useProxyWorkspace(
   const isLoading = ref(false)
   const globalLanguage = ref(defaultCardLanguage)
   const inkSaving = ref(false)
+  const persistenceError = ref<WorkspacePersistenceError>('')
+  const persistence = createWorkspaceStorage(storageBackend)
+  const loadedWorkspace = persistence.load()
+  let canPersist = true
+  let skipNextPersistenceWrite = false
+
+  if (loadedWorkspace.status === 'restored') {
+    const snapshot = loadedWorkspace.snapshot
+    rawList.value = snapshot.rawList
+    rows.value = snapshot.rows.map((row) => ({
+      ...row,
+      status:
+        row.status === 'loading'
+          ? row.selectedPrintingId
+            ? 'resolved'
+            : 'idle'
+          : row.status,
+    }))
+    parseErrors.value = snapshot.parseErrors
+    failedEntryCount.value = snapshot.failedEntryCount
+    globalLanguage.value = snapshot.globalLanguage
+    inkSaving.value = snapshot.inkSaving
+  } else if (loadedWorkspace.status === 'invalid') {
+    canPersist = false
+    persistenceError.value =
+      loadedWorkspace.reason === 'unsupported-version'
+        ? 'unsupported'
+        : 'malformed'
+  } else if (loadedWorkspace.status === 'unavailable') {
+    canPersist = false
+    persistenceError.value = 'read'
+  }
+
+  function createSnapshot(): WorkspaceSnapshot {
+    return {
+      rawList: rawList.value,
+      rows: rows.value,
+      parseErrors: parseErrors.value,
+      failedEntryCount: failedEntryCount.value,
+      globalLanguage: globalLanguage.value,
+      inkSaving: inkSaving.value,
+    }
+  }
+
+  watch(
+    [rawList, rows, parseErrors, failedEntryCount, globalLanguage, inkSaving],
+    () => {
+      if (!canPersist) {
+        return
+      }
+      if (skipNextPersistenceWrite) {
+        skipNextPersistenceWrite = false
+        return
+      }
+      if (persistence.save(createSnapshot()) === 'success') {
+        if (persistenceError.value === 'write') {
+          persistenceError.value = ''
+        }
+      } else {
+        persistenceError.value = 'write'
+      }
+    },
+    { deep: true },
+  )
+
   const searchRequests = new Map<string, Promise<void>>()
   const searchTimers = new Map<string, ReturnType<typeof setTimeout>>()
   const searchVersions = new Map<string, number>()
@@ -413,6 +487,29 @@ export function useProxyWorkspace(
     inkSaving.value = enabled
   }
 
+  async function clearWorkspace() {
+    if (isLoading.value || rows.value.some((row) => row.status === 'loading')) {
+      return false
+    }
+    if (persistence.clear() !== 'success') {
+      persistenceError.value = 'clear'
+      return false
+    }
+
+    skipNextPersistenceWrite = true
+    canPersist = true
+    persistenceError.value = ''
+    rawList.value = ''
+    rows.value = []
+    parseErrors.value = []
+    failedEntryCount.value = 0
+    globalLanguage.value = defaultCardLanguage
+    inkSaving.value = false
+    await nextTick()
+    skipNextPersistenceWrite = false
+    return true
+  }
+
   return {
     rawList,
     rows,
@@ -420,6 +517,7 @@ export function useProxyWorkspace(
     parseErrors,
     globalLanguage,
     inkSaving,
+    persistenceError,
     totalCopies,
     unresolvedCount,
     pages,
@@ -433,6 +531,7 @@ export function useProxyWorkspace(
     setGlobalLanguage,
     setRowLanguage,
     setInkSaving,
+    clearWorkspace,
     print,
   }
 }

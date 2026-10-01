@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CardListInput from './components/CardListInput.vue'
@@ -19,6 +19,7 @@ const {
   isLoading,
   globalLanguage,
   inkSaving,
+  persistenceError,
   rows,
   visibleRows,
   totalCopies,
@@ -33,11 +34,15 @@ const {
   setGlobalLanguage,
   setRowLanguage,
   setInkSaving,
+  clearWorkspace,
   print,
 } = useProxyWorkspace()
 
 const { t } = useI18n()
 const quickAddValue = ref('')
+const canClearWorkspace = computed(
+  () => !isLoading.value && !rows.value.some((row) => row.status === 'loading'),
+)
 
 async function addQuickCard() {
   const value = quickAddValue.value.trim()
@@ -87,7 +92,17 @@ async function addQuickCard() {
             <p class="app__eyebrow">{{ t('workspace.kicker') }}</p>
             <h2 class="app__section-title">{{ t('workspace.title') }}</h2>
           </div>
+          <BaseButton
+            variant="danger"
+            :disabled="!canClearWorkspace"
+            @click="clearWorkspace"
+          >
+            {{ t('workspace.persistence.clear') }}
+          </BaseButton>
         </div>
+        <p v-if="persistenceError" class="app__persistence-error" role="alert">
+          {{ t(`workspace.persistence.${persistenceError}`) }}
+        </p>
         <div class="app__quick-add">
           <BaseInput
             v-model="quickAddValue"
@@ -230,6 +245,12 @@ async function addQuickCard() {
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 10px;
+}
+
+.app__persistence-error {
+  margin: 0;
+  color: #a42a43;
+  font-weight: 700;
 }
 
 .app__section-title {

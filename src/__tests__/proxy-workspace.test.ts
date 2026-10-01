@@ -1,6 +1,12 @@
+import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useProxyWorkspace } from '@/composables/useProxyWorkspace'
+import {
+  createWorkspaceStorage,
+  WORKSPACE_STORAGE_KEY,
+  type WorkspaceStorageLike,
+} from '@/services/workspace-storage'
 
 const printing = {
   id: 'printing-1',
@@ -14,10 +20,23 @@ const printing = {
 
 let cryptoId = 0
 
+function createMemoryStorage(): WorkspaceStorageLike & {
+  values: Map<string, string>
+} {
+  const values = new Map<string, string>()
+  return {
+    values,
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+    removeItem: (key) => values.delete(key),
+  }
+}
+
 describe('useProxyWorkspace', () => {
   beforeEach(() => {
     cryptoId = 0
     vi.stubGlobal('crypto', { randomUUID: vi.fn(() => `row-${cryptoId++}`) })
+    window.localStorage.clear()
   })
 
   it('adds only resolved rows and removes them by identity', async () => {
@@ -644,5 +663,145 @@ describe('useProxyWorkspace', () => {
     expect(workspace.inkSaving.value).toBe(true)
     expect(JSON.stringify(workspace.rows.value)).toBe(rowsBefore)
     expect(JSON.stringify(workspace.pages.value)).toBe(pagesBefore)
+  })
+
+  it('restores saved rows and loaded languages without searching again', async () => {
+    const memory = createMemoryStorage()
+    const client = {
+      searchPrintings: vi.fn().mockResolvedValue([printing]),
+    }
+    const original = useProxyWorkspace(client, undefined, undefined, memory)
+    original.rawList.value = 'Lightning Bolt'
+    await original.importList()
+    const row = original.rows.value[0]
+    if (!row) {
+      throw new Error('Expected an imported row')
+    }
+    await original.addCardFromSyntax('Lightning Bolt\nCounterspell')
+    expect(original.parseErrors.value).not.toHaveLength(0)
+    const germanPrinting = { ...printing, id: 'printing-de', language: 'de' }
+    row.printings.push(germanPrinting)
+    row.loadedLanguages.push('de')
+    row.status = 'loading'
+    await nextTick()
+
+    const restoredClient = {
+      searchPrintings: vi.fn().mockResolvedValue([printing]),
+    }
+    const restored = useProxyWorkspace(
+      restoredClient,
+      undefined,
+      undefined,
+      memory,
+    )
+    const restoredRow = restored.rows.value[0]
+
+    expect(restored.rawList.value).toBe('Lightning Bolt')
+    expect(restoredRow?.status).toBe('resolved')
+    expect(restoredRow?.loadedLanguages).toContain('de')
+    expect(restored.parseErrors.value).toEqual(original.parseErrors.value)
+    expect(restored.unresolvedCount.value).toBe(1)
+    expect(restored.pages.value).toHaveLength(1)
+    await restored.setGlobalLanguage('de')
+
+    expect(restoredRow?.selectedPrintingId).toBe(germanPrinting.id)
+    expect(restoredClient.searchPrintings).not.toHaveBeenCalled()
+  })
+
+  it('autosaves list edits and workspace changes', async () => {
+    const memory = createMemoryStorage()
+    const storage = createWorkspaceStorage(memory)
+    const client = {
+      searchPrintings: vi.fn().mockResolvedValue([printing]),
+    }
+    const workspace = useProxyWorkspace(client, undefined, undefined, memory)
+    workspace.rawList.value = 'Lightning Bolt'
+    await nextTick()
+
+    expect(storage.load()).toMatchObject({
+      status: 'restored',
+      snapshot: { rawList: 'Lightning Bolt', rows: [] },
+    })
+
+    await workspace.importList()
+    const row = workspace.rows.value[0]
+    if (!row) {
+      throw new Error('Expected an imported row')
+    }
+    workspace.updateRow(row.id, { quantity: 3 })
+    workspace.setInkSaving(true)
+    await workspace.setRowLanguage(row.id, 'de')
+    await nextTick()
+
+    expect(storage.load()).toMatchObject({
+      status: 'restored',
+      snapshot: {
+        rows: [{ quantity: 3, selectedPrintingId: printing.id }],
+        globalLanguage: 'es',
+        inkSaving: true,
+      },
+    })
+    const savedWorkspace = storage.load()
+    if (savedWorkspace.status !== 'restored') {
+      throw new Error('Expected the workspace to be saved')
+    }
+    expect(savedWorkspace.snapshot.rows[0]?.loadedLanguages).toContain('de')
+
+    expect(await workspace.addCardFromSyntax('Lightning Bolt')).toBe(true)
+    await nextTick()
+    expect(storage.load()).toMatchObject({
+      status: 'restored',
+      snapshot: { rows: [{}, {}] },
+    })
+    workspace.removeRow(workspace.rows.value[1]?.id ?? '')
+    await nextTick()
+    expect(storage.load()).toMatchObject({
+      status: 'restored',
+      snapshot: { rows: [{ quantity: 3 }] },
+    })
+  })
+
+  it('does not overwrite incompatible data and clears it only on request', async () => {
+    const memory = createMemoryStorage()
+    const unsupportedData = JSON.stringify({ version: 2, workspace: {} })
+    memory.values.set(WORKSPACE_STORAGE_KEY, unsupportedData)
+    const workspace = useProxyWorkspace(
+      { searchPrintings: vi.fn() },
+      undefined,
+      undefined,
+      memory,
+    )
+
+    workspace.rawList.value = 'New workspace'
+    await nextTick()
+
+    expect(workspace.persistenceError.value).toBe('unsupported')
+    expect(memory.values.get(WORKSPACE_STORAGE_KEY)).toBe(unsupportedData)
+    expect(await workspace.clearWorkspace()).toBe(true)
+    expect(memory.values.has(WORKSPACE_STORAGE_KEY)).toBe(false)
+    expect(workspace.rawList.value).toBe('')
+    expect(workspace.persistenceError.value).toBe('')
+  })
+
+  it('keeps in-memory edits available when automatic saving fails', async () => {
+    const failingStorage: WorkspaceStorageLike = {
+      getItem: () => null,
+      setItem: () => {
+        throw new Error('Storage quota exceeded')
+      },
+      removeItem: () => {},
+    }
+    const workspace = useProxyWorkspace(
+      { searchPrintings: vi.fn() },
+      undefined,
+      undefined,
+      failingStorage,
+    )
+
+    workspace.rawList.value = 'Lightning Bolt'
+    await nextTick()
+
+    expect(workspace.rawList.value).toBe('Lightning Bolt')
+    expect(workspace.persistenceError.value).toBe('write')
   })
 })

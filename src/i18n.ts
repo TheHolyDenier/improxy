@@ -59,6 +59,18 @@ export const i18n = createI18n({
         subtitle: 'Edita tus cartas',
         empty: 'Añade una lista o una carta para empezar.',
         add: '+ Añadir carta',
+        persistence: {
+          clear: 'Borrar espacio guardado',
+          read: 'No se pudo leer el espacio guardado. No se guardarán cambios para proteger los datos existentes.',
+          malformed:
+            'El espacio guardado no se puede restaurar. Bórralo para empezar un espacio nuevo.',
+          unsupported:
+            'El espacio guardado pertenece a una versión incompatible. Bórralo para empezar un espacio nuevo.',
+          write:
+            'No se pudieron guardar los últimos cambios. El espacio de trabajo sigue disponible en esta página.',
+          clearFailed:
+            'No se pudo borrar el espacio guardado. Tus cambios siguen disponibles en esta página.',
+        },
       },
       workflow: {
         editKicker: '02 / AJUSTA EL MAZO A TU GUSTO',
