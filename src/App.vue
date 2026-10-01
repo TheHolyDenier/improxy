@@ -52,6 +52,12 @@ async function addQuickCard() {
 
 <template>
   <main class="app">
+    <div class="app__import-language">
+      <LanguageControls
+          :model-value="globalLanguage"
+          @update:model-value="setGlobalLanguage"
+      />
+    </div>
     <header class="hero">
       <div class="hero__copy">
         <h1 class="hero__title">
@@ -65,12 +71,6 @@ async function addQuickCard() {
     </header>
 
     <div id="import-section">
-      <div class="app__import-language">
-        <LanguageControls
-          :model-value="globalLanguage"
-          @update:model-value="setGlobalLanguage"
-        />
-      </div>
       <CardListInput
         v-model="rawList"
         :error-messages="parseErrors"
